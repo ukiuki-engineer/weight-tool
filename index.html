@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>体重管理グラフ</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="container" id="app" v-cloak>
+    <header class="header">
+      <div>
+        <h1>体重管理グラフ</h1>
+        <p>7日移動平均と目標体重を比較します。</p>
+      </div>
+      <div class="authArea">
+        <a class="navLink" href="./entry.html">入力ページへ</a>
+        <span class="userEmail">{{ user?.email }}</span>
+        <button v-if="!user" type="button" class="authButton" @click="handleLogin">Googleでログイン</button>
+        <button v-else type="button" class="authButton" @click="logout">ログアウト</button>
+      </div>
+    </header>
+
+    <section v-if="!ready" class="loginNotice">
+      <p>{{ message }}</p>
+    </section>
+
+    <div v-show="ready">
+      <section class="controls">
+        <label>
+          表示開始
+          <input type="date" v-model="controls.startDate" :min="dateBounds.min" :max="dateBounds.max" />
+        </label>
+        <label>
+          表示終了
+          <input type="date" v-model="controls.endDate" :min="dateBounds.min" :max="dateBounds.max" />
+        </label>
+        <label class="checkboxLabel">
+          <input type="checkbox" v-model="controls.showRaw" />
+          実測値を表示
+        </label>
+        <label class="checkboxLabel">
+          <input type="checkbox" v-model="controls.showMovingAverage" />
+          7日移動平均を表示
+        </label>
+        <label class="checkboxLabel">
+          <input type="checkbox" v-model="controls.showTarget" />
+          目標体重を表示
+        </label>
+      </section>
+
+      <section class="summary">
+        <div class="summaryItem" v-for="item in summaryItems" :key="item.label">
+          <div class="summaryLabel">{{ item.label }}</div>
+          <div class="summaryValue">{{ item.value }}</div>
+          <div class="summarySub">{{ item.sub }}</div>
+        </div>
+      </section>
+
+      <section class="chartCard">
+        <canvas id="weightChart"></canvas>
+      </section>
+
+      <section class="notes">
+        <h2>見方</h2>
+        <ul>
+          <li>実測値は日々の水分・塩分・便通などで大きく揺れます。</li>
+          <li>基本判定は「7日移動平均」と「目標体重」の差で見ます。</li>
+          <li>測定が長く空いた区間も、移動平均線は直線でつなぎます。</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <script src="./app.js"></script>
+  <script type="module" src="./graph-page.js"></script>
+</body>
+</html>
