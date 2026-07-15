@@ -106,12 +106,6 @@ p {
 }
 
 .entryForm input[type="number"] {
-  display: block;
-  margin-top: 4px;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fff;
   width: 110px;
 }
 
@@ -147,13 +141,16 @@ label {
 }
 
 select,
-input[type="date"] {
+input[type="date"],
+input[type="number"] {
   display: block;
   margin-top: 4px;
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
   background: #fff;
+  /* 16px未満だとiOS Safariがフォーカス時に自動ズームする */
+  font-size: 16px;
 }
 
 .checkboxLabel {
@@ -231,6 +228,11 @@ input[type="date"] {
     display: block;
   }
 
+  .authArea {
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
   .controls {
     margin-top: 14px;
   }
@@ -241,5 +243,29 @@ input[type="date"] {
 
   .chartCard {
     height: 420px;
+    padding: 12px 8px;
+  }
+
+  .entryForm label {
+    flex: 1 1 100%;
+  }
+
+  .entryForm input[type="date"],
+  .entryForm input[type="number"] {
+    width: 100%;
+  }
+
+  .saveButton {
+    margin-top: 0;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .entryStatus {
+    margin-top: 0;
+  }
+
+  .recordTable {
+    width: 100%;
   }
 }
