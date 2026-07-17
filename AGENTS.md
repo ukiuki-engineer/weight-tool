@@ -9,7 +9,7 @@ Claude Code は `CLAUDE.md`(このファイルをインポートする1行のみ
 - ビルド工程はありません。`python3 -m http.server 8000` で起動し `http://localhost:8000/` を開くと動きます(`file://` 直接は不可)。
 - UI は Vue 3(CDN のグローバルビルド) + vue3-sfc-loader(CDN)で `.vue` をブラウザ内コンパイルします。グラフ描画は Chart.js + chartjs-plugin-zoom + hammer.js(いずれも CDN)、Firebase SDK は gstatic の ES モジュール CDN を使っています。
 - 画面構成: HTML は `index.html` 1枚で、「グラフ」「サマリー」「入力」「目標」の4画面をタブで切り替えます(vue-router は使わない。ビュー切替は `view` 変数と v-show)。ヘッダーとタブは sticky でスクロール追従します。
-- 権限は2層: Firestore ルール(サーバー側の強制)+ UI の出し分け。管理者は `users/{uid}` の `isAdmin: true` で判定し、`users` コレクションから切り替え対象を取得します。一般ユーザーは自分の測定値のみ読み書き可、自分の目標は閲覧のみです。
+- 権限は2層: Firestore ルール(サーバー側の強制)+ UI の出し分け。管理者は `users/{uid}` の `isAdmin: true` で判定し、`users` コレクションから切り替え対象を取得します。一般ユーザーは自分の測定値と目標のみ読み書き可です。
 - ディレクトリ構成:
   - `index.html` … ルート画面(ヘッダー、タブ、ビュー呼び出し)と CDN 読み込み
   - `css/style.css` … 全スタイル

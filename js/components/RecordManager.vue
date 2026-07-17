@@ -46,20 +46,33 @@
               <td class="recordEnteredAt">{{ formatUpdatedAt(row.updatedAt, row.date) }}</td>
               <td class="recordActions">
                 <template v-if="canEdit">
-                  <template v-if="confirmingDate === row.date">
-                    <button type="button" class="rowButton dangerButton" @click="handleDelete(row)">
-                      本当に削除
-                    </button>
-                    <button type="button" class="rowButton" @click="cancelDelete">やめる</button>
-                  </template>
-                  <template v-else>
-                    <button type="button" class="rowButton editButton" @click="startEdit(row)">
-                      編集
-                    </button>
-                    <button type="button" class="rowButton deleteButton" @click="startConfirmDelete(row)">
-                      削除
-                    </button>
-                  </template>
+                  <button
+                    type="button"
+                    class="rowIconButton editButton"
+                    aria-label="編集"
+                    title="編集"
+                    @click="startEdit(row)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="rowIconButton deleteButton"
+                    aria-label="削除"
+                    title="削除"
+                    @click="startConfirmDelete(row)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v5" />
+                      <path d="M14 11v5" />
+                    </svg>
+                  </button>
                 </template>
               </td>
             </tr>
@@ -74,22 +87,28 @@
         <div class="pagerSummary">
           <span class="pagerTotal">全{{ allRows.length }}件</span>
           <label class="pagerControl">
-            表示件数
+            <span class="pagerControlText">表示件数</span>
             <select v-model.number="pageSize">
               <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
             </select>
           </label>
         </div>
         <div class="pagerNavigation">
-          <button type="button" :disabled="page <= 1" @click="page--">前へ</button>
+          <button type="button" aria-label="前へ" :disabled="page <= 1" @click="page--">
+            <span class="pagerButtonText">前へ</span>
+            <span class="pagerButtonIcon" aria-hidden="true">&lt;</span>
+          </button>
           <label class="pagerControl">
-            ページ
+            <span class="pagerControlText">ページ</span>
             <select v-model.number="page">
               <option v-for="n in pageOptions" :key="n" :value="n">{{ n }}</option>
             </select>
           </label>
           <span class="pagerTotal">/ {{ totalPages }}</span>
-          <button type="button" :disabled="page >= totalPages" @click="page++">次へ</button>
+          <button type="button" aria-label="次へ" :disabled="page >= totalPages" @click="page++">
+            <span class="pagerButtonText">次へ</span>
+            <span class="pagerButtonIcon" aria-hidden="true">&gt;</span>
+          </button>
         </div>
       </div>
       <button
@@ -142,6 +161,37 @@
             <button type="submit" class="saveButton" :disabled="editingSaving">保存</button>
           </div>
         </form>
+      </section>
+    </div>
+
+    <div v-if="isDeleteOpen" class="modalBackdrop recordDeleteBackdrop" @click.self="cancelDelete">
+      <section class="recordDeleteDialog" role="dialog" aria-modal="true" :aria-labelledby="deleteTitleId">
+        <div class="modalHeader">
+          <div>
+            <p class="modalEyebrow modalEyebrowDanger">削除</p>
+            <h2 :id="deleteTitleId">削除しますか？</h2>
+          </div>
+          <button
+            type="button"
+            class="iconButton"
+            aria-label="閉じる"
+            :disabled="deleting"
+            @click="cancelDelete"
+          >
+            ×
+          </button>
+        </div>
+        <p class="deleteMessage">
+          {{ deleteCandidate.date }} の{{ config.kindLabel }}({{ deleteCandidate.weight.toFixed(1) }}kg)を削除します。
+        </p>
+        <div class="dialogActions">
+          <button type="button" class="authButton" :disabled="deleting" @click="cancelDelete">
+            キャンセル
+          </button>
+          <button type="button" class="saveButton dangerButton" :disabled="deleting" @click="handleDelete">
+            削除
+          </button>
+        </div>
       </section>
     </div>
 
@@ -200,7 +250,7 @@
 </template>
 
 <script>
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import DatePicker from "./DatePicker.vue";
 import {
   deleteTarget,
@@ -222,6 +272,7 @@ import {
 
 const KIND_CONFIG = {
   weight: {
+    kindLabel: "記録",
     weightLabel: "体重[kg]",
     editTitle: "記録を編集",
     emptyMessage: "まだ記録がありません。",
@@ -236,6 +287,7 @@ const KIND_CONFIG = {
     readOnlyStatus: "記録は閲覧のみです。",
   },
   target: {
+    kindLabel: "目標",
     weightLabel: "目標体重[kg]",
     editTitle: "目標を編集",
     emptyMessage: "まだ目標がありません。",
@@ -295,16 +347,17 @@ export default {
     const config = computed(() => KIND_CONFIG[props.kind] || KIND_CONFIG.weight);
     const bulkTitleId = computed(() => `${props.kind}BulkDialogTitle`);
     const dataIoTitleId = computed(() => `${props.kind}DataIoDialogTitle`);
+    const deleteTitleId = computed(() => `${props.kind}DeleteDialogTitle`);
     const editTitleId = computed(() => `${props.kind}EditDialogTitle`);
     const entryDate = ref(props.kind === "target" ? defaultTargetDate(props.rows) : todayString());
     const saving = ref(false);
     const page = ref(1);
     const pageSize = ref(PAGE_SIZE_OPTIONS[0]);
-    const confirmingDate = ref(null);
+    const deleteCandidate = ref(null);
+    const deleting = ref(false);
     const editingDate = ref(null);
     const editDate = ref("");
     const editingSaving = ref(false);
-    let confirmTimer = null;
 
     const allRows = computed(() =>
       [...props.rows].sort((a, b) => {
@@ -440,30 +493,33 @@ export default {
     function startConfirmDelete(row) {
       if (!props.canEdit) return;
       cancelEdit();
-      confirmingDate.value = row.date;
-      clearTimeout(confirmTimer);
-      confirmTimer = setTimeout(() => {
-        confirmingDate.value = null;
-      }, 5000);
+      deleteCandidate.value = row;
     }
 
     function cancelDelete() {
-      clearTimeout(confirmTimer);
-      confirmingDate.value = null;
+      if (deleting.value) return;
+      deleteCandidate.value = null;
     }
 
-    async function handleDelete(row) {
+    const isDeleteOpen = computed(() => deleteCandidate.value !== null);
+
+    async function handleDelete() {
       if (!props.canEdit) {
         showNotice(config.value.readOnlyStatus, "error", 4000);
         return;
       }
-      cancelDelete();
+      const row = deleteCandidate.value;
+      if (!row) return;
+      deleting.value = true;
       try {
         await config.value.deleteOne(props.uid, row.date);
         emit("deleted", { date: row.date });
+        deleteCandidate.value = null;
         showNotice(config.value.deletedMessage(row));
       } catch (error) {
         showNotice(`削除に失敗しました: ${error.message}`, "error", 4000);
+      } finally {
+        deleting.value = false;
       }
     }
 
@@ -534,14 +590,11 @@ export default {
       }
     }
 
-    onBeforeUnmount(() => {
-      clearTimeout(confirmTimer);
-    });
-
     return {
       config,
       bulkTitleId,
       dataIoTitleId,
+      deleteTitleId,
       editTitleId,
       entryDate,
       entryWeightInt,
@@ -553,10 +606,12 @@ export default {
       decOptions,
       saving,
       editingSaving,
+      deleting,
       page,
       pageSize,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
-      confirmingDate,
+      deleteCandidate,
+      isDeleteOpen,
       allRows,
       totalPages,
       pageOptions,

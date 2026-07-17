@@ -10,7 +10,7 @@ import {
   saveUserSettings,
 } from "./services/firebase-store.js?v=20260717-4";
 import { showNotice } from "./services/notification.js";
-import { loadSfc } from "./sfc-loader.js?v=20260717-4";
+import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 
 const VIEW_OPTIONS = [
   { value: "graph", label: "グラフ" },
@@ -66,6 +66,7 @@ createApp({
     const userMemoDraft = ref("");
     const userDefaultViewDraft = ref("graph");
     const myPageSaving = ref(false);
+    const loggingIn = ref(false);
 
     // 表示中ユーザーのUID(管理者は他ユーザーに切り替えて読み書きできる)
     const viewUid = ref(null);
@@ -237,11 +238,15 @@ createApp({
     }
 
     async function handleLogin() {
+      if (loggingIn.value) return;
+      loggingIn.value = true;
       message.value = "ログイン中…";
       try {
         await login();
       } catch (error) {
         message.value = `ログインに失敗しました: ${error.message}`;
+      } finally {
+        loggingIn.value = false;
       }
     }
 
@@ -366,6 +371,7 @@ createApp({
       userMemoDraft,
       userDefaultViewDraft,
       myPageSaving,
+      loggingIn,
       displayName,
       avatarInitial,
       defaultViewPreview,

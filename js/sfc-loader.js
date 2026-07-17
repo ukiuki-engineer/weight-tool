@@ -2,6 +2,7 @@ import * as chartModule from "./chart.js";
 import * as firebaseStoreModule from "./services/firebase-store.js?v=20260717-4";
 import * as notificationModule from "./services/notification.js";
 import * as exportRecordsModule from "./utils/export-records.js?v=20260717-4";
+import * as japaneseHolidaysModule from "./utils/japanese-holidays.js?v=20260718-1";
 import * as jsonImportModule from "./utils/json-import.js";
 import * as recordUtilsModule from "./utils/record-utils.js?v=20260717-4";
 
@@ -18,6 +19,7 @@ const options = {
     "@weight-tool/firebase-store": firebaseStoreModule,
     "@weight-tool/notification": notificationModule,
     "@weight-tool/export-records": exportRecordsModule,
+    "@weight-tool/japanese-holidays": japaneseHolidaysModule,
     "@weight-tool/json-import": jsonImportModule,
     "@weight-tool/record-utils": recordUtilsModule,
   },

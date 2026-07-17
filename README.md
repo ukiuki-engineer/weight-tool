@@ -23,6 +23,7 @@
 
 管理者権限はソースコードにUIDを書かず、`users/{uid}`の`isAdmin`で管理します。
 一般ユーザーが`isAdmin`を変更できないようにFirestore Security Rulesで保護してください。
+一般ユーザーは自分の測定値と目標を読み書きでき、管理者はユーザー切り替えで他ユーザーの測定値と目標も読み書きできます。
 マイページ設定は `users/{uid}` に保存し、ブラウザのlocalStorageやIndexedDBには保存しません。Firebase Authのログイン状態はsessionStorageに限定します。
 Security Rulesは `firestore.rules` で管理し、`firebase.json` からデプロイします。
 `users/{uid}` が存在しない場合は初回ログイン時に作成し、管理者のユーザー切り替え一覧へ登録します。

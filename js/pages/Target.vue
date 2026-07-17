@@ -20,7 +20,7 @@ export default {
   props: {
     records: { type: Object, required: true },
     uid: { type: String, required: true },
-    canEdit: { type: Boolean, default: false },
+    canEdit: { type: Boolean, default: true },
   },
   emits: ["saved", "deleted", "imported"],
 };
