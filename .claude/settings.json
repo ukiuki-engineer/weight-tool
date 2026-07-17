@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check js/views/target-view.js)",
+      "Bash(node --check js/shared/json-import.js)",
+      "Bash(python3 -c \"import PIL; print\\('PIL', PIL.__version__\\)\")"
+    ]
+  }
+}

@@ -3,78 +3,141 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>体重管理グラフ</title>
-  <link rel="stylesheet" href="./style.css" />
+  <title>体重管理</title>
+  <meta name="theme-color" content="#14b8a6" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
   <main class="container" id="app" v-cloak>
-    <header class="header">
-      <div>
-        <h1>体重管理グラフ</h1>
-        <p>7日移動平均と目標体重を比較します。</p>
-      </div>
-      <div class="authArea">
-        <a class="navLink" href="./entry.html">入力ページへ</a>
-        <span class="userEmail">{{ user?.email }}</span>
-        <button v-if="!user" type="button" class="authButton" @click="handleLogin">Googleでログイン</button>
-        <button v-else type="button" class="authButton" @click="logout">ログアウト</button>
-      </div>
-    </header>
+    <div class="stickyBar">
+      <header class="header">
+        <h1>体重管理</h1>
+        <div class="authArea">
+          <div v-if="isAdmin" class="userSwitch" title="表示するユーザーを切り替え">
+            <select ref="userSelectRef" v-model="viewUid" aria-label="表示するユーザー">
+              <option v-for="option in userOptions" :key="option.uid" :value="option.uid">
+                {{ option.name }}
+              </option>
+            </select>
+          </div>
+          <span class="userEmail">{{ user?.email }}</span>
+          <button v-if="!user" type="button" class="authButton" @click="handleLogin">Googleでログイン</button>
+          <div v-else ref="userMenuRef" class="userMenu">
+            <button
+              type="button"
+              class="avatarButton"
+              aria-label="ユーザーメニュー"
+              :aria-expanded="userMenuOpen.toString()"
+              aria-haspopup="menu"
+              @click="toggleUserMenu"
+            >
+              <img v-if="user?.photoURL" class="avatarImage" :src="user.photoURL" alt="" />
+              <span v-else class="avatarFallback">{{ avatarInitial }}</span>
+            </button>
+            <div v-if="userMenuOpen" class="userDropdown" role="menu">
+              <div class="dropdownProfile">
+                <span class="dropdownName">{{ displayName }}</span>
+                <span class="dropdownEmail">{{ user?.email }}</span>
+              </div>
+              <button type="button" class="dropdownItem" role="menuitem" @click="openMyPage">マイページ</button>
+              <button type="button" class="dropdownItem dropdownItemDanger" role="menuitem" @click="handleLogout">
+                ログアウト
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <nav v-if="ready" class="viewTabs">
+        <button type="button" :class="{ active: view === 'graph' }" @click="view = 'graph'">グラフ</button>
+        <button type="button" :class="{ active: view === 'summary' }" @click="view = 'summary'">サマリー</button>
+        <button type="button" :class="{ active: view === 'entry' }" @click="view = 'entry'">入力</button>
+        <button type="button" :class="{ active: view === 'target' }" @click="view = 'target'">目標</button>
+      </nav>
+    </div>
 
     <section v-if="!ready" class="loginNotice">
       <p>{{ message }}</p>
     </section>
 
-    <div v-show="ready">
-      <section class="controls">
-        <label>
-          表示開始
-          <input type="date" v-model="controls.startDate" :min="dateBounds.min" :max="dateBounds.max" />
-        </label>
-        <label>
-          表示終了
-          <input type="date" v-model="controls.endDate" :min="dateBounds.min" :max="dateBounds.max" />
-        </label>
-        <label class="checkboxLabel">
-          <input type="checkbox" v-model="controls.showRaw" />
-          実測値を表示
-        </label>
-        <label class="checkboxLabel">
-          <input type="checkbox" v-model="controls.showMovingAverage" />
-          7日移動平均を表示
-        </label>
-        <label class="checkboxLabel">
-          <input type="checkbox" v-model="controls.showTarget" />
-          目標体重を表示
-        </label>
-      </section>
+    <div v-if="ready" class="viewContent">
+      <div v-show="view === 'graph'" class="contentPane">
+        <graph-view :records="records" :active="view === 'graph'"></graph-view>
+      </div>
+      <div v-show="view === 'summary'" class="contentPane">
+        <summary-view :records="records"></summary-view>
+      </div>
+      <div v-show="view === 'entry'" class="contentPane recordViewHost">
+        <entry-view :records="records" :uid="viewUid" @saved="onSaved" @deleted="onDeleted" @imported="onImported"></entry-view>
+      </div>
+      <div v-show="view === 'target'" class="contentPane recordViewHost">
+        <target-view :records="records" :uid="viewUid" :can-edit="isAdmin" @saved="onTargetSaved" @deleted="onTargetDeleted" @imported="onTargetImported"></target-view>
+      </div>
+    </div>
 
-      <section class="summary">
-        <div class="summaryItem" v-for="item in summaryItems" :key="item.label">
-          <div class="summaryLabel">{{ item.label }}</div>
-          <div class="summaryValue">{{ item.value }}</div>
-          <div class="summarySub">{{ item.sub }}</div>
+    <div v-if="myPageOpen" class="modalBackdrop" @click.self="closeMyPage">
+      <section class="myPagePanel" role="dialog" aria-modal="true" aria-labelledby="myPageTitle">
+        <div class="modalHeader">
+          <div>
+            <p class="modalEyebrow">プロフィール</p>
+            <h2 id="myPageTitle">マイページ</h2>
+          </div>
+          <button type="button" class="iconButton" aria-label="閉じる" @click="closeMyPage">×</button>
         </div>
-      </section>
 
-      <section class="chartCard">
-        <canvas id="weightChart"></canvas>
-      </section>
+        <form class="myPageForm" @submit.prevent="saveMyPage">
+          <label>
+            ユーザー名
+            <input type="text" v-model.trim="userNameDraft" maxlength="32" placeholder="例: 山田太郎" autocomplete="name" />
+          </label>
+          <label>
+            メールアドレス
+            <input type="email" :value="user?.email || ''" readonly />
+          </label>
+          <label>
+            メモ
+            <input type="text" v-model.trim="userMemoDraft" maxlength="80" placeholder="任意メモ" />
+          </label>
+          <label>
+            デフォルト表示
+            <select v-model="userDefaultViewDraft">
+              <option v-for="option in viewOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
 
-      <section class="notes">
-        <h2>見方</h2>
-        <ul>
-          <li>実測値は日々の水分・塩分・便通などで大きく揺れます。</li>
-          <li>基本判定は「7日移動平均」と「目標体重」の差で見ます。</li>
-          <li>測定が長く空いた区間も、移動平均線は直線でつなぎます。</li>
-        </ul>
+          <div class="myPagePreview">
+            <span class="previewAvatar">{{ avatarInitial }}</span>
+            <div>
+              <strong>{{ userNameDraft || user?.displayName || "名前未設定" }}</strong>
+              <span>{{ userMemoDraft || defaultViewPreview }}</span>
+            </div>
+          </div>
+
+          <div class="myPageActions">
+            <button type="button" class="authButton" @click="closeMyPage">キャンセル</button>
+            <button type="submit" class="saveButton">保存</button>
+          </div>
+          <p class="profileStatus">{{ myPageStatus }}</p>
+        </form>
       </section>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
-  <script src="./app.js"></script>
-  <script type="module" src="./graph-page.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,1309 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f6f7f9;
+  color: #222;
+}
+
+.container {
+  width: min(1100px, 100%);
+  height: 100vh;
+  height: 100dvh;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ヘッダー+タブは固定領域。スクロールは各ビュー内だけで行う */
+.stickyBar {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 10;
+  background: #f6f7f9;
+  margin: 0 -24px;
+  padding: 8px 24px 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.viewContent,
+.loginNotice {
+  margin-top: 18px;
+}
+
+.viewContent {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.contentPane {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 24px;
+}
+
+.recordViewHost {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.loginNotice {
+  flex: 0 0 auto;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+p {
+  margin: 0;
+  color: #666;
+}
+
+.chartControls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+/* 期間プリセット(1ヶ月/3ヶ月/6ヶ月/全期間) */
+.rangeBar {
+  display: flex;
+  gap: 4px;
+  background: #e9edf2;
+  padding: 4px;
+  border-radius: 10px;
+  width: max-content;
+}
+
+.rangeBar button {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  color: #556070;
+  cursor: pointer;
+}
+
+.rangeBar button.active {
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.chartHint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #8a94a3;
+}
+
+/* 系列のON/OFFトグルチップ */
+.seriesToggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.seriesToggles button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid #d5dbe3;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+}
+
+.seriesToggles button.off {
+  background: #eef1f5;
+  border-color: transparent;
+  color: #9aa3af;
+}
+
+.seriesDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+[v-cloak] {
+  display: none;
+}
+
+.viewTabs {
+  display: flex;
+  border-bottom: 2px solid #dde3ea;
+}
+
+.viewTabs button {
+  padding: 10px 30px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: transparent;
+  font-size: 15px;
+  color: #667;
+  cursor: pointer;
+}
+
+.viewTabs button:hover {
+  color: #3b82f6;
+}
+
+.viewTabs button.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 700;
+}
+
+.authArea {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.userEmail {
+  font-size: 13px;
+  color: #666;
+}
+
+/* 表示ユーザーの切り替え(管理者のみ表示) */
+.userSwitch {
+  width: clamp(190px, 22vw, 270px);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.userSwitch > select {
+  margin-top: 0;
+  padding: 6px 10px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-height: 38px;
+}
+
+.userSwitch .ts-wrapper {
+  width: 100%;
+}
+
+.userSwitch .ts-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-height: 42px;
+  height: 42px;
+  max-height: 42px;
+  padding: 8px 38px 8px 14px;
+  border: 1px solid #d6dde8;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.userSwitch .ts-wrapper.focus .ts-control,
+.userSwitch .ts-wrapper.dropdown-active .ts-control {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.userSwitch .ts-control input[type="text"] {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0 !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  line-height: inherit;
+  min-height: 0;
+}
+
+.userSelectItem {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.userSwitch .ts-dropdown {
+  margin-top: 8px;
+  border: 1px solid #dfe5ee;
+  border-radius: 10px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.userSwitch .ts-dropdown-content {
+  padding: 6px;
+}
+
+.userSelectOption {
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.userSwitch .ts-dropdown .active {
+  background: #eef6ff;
+  color: #1d4ed8;
+}
+
+.userMenu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #d5dbe3;
+  border-radius: 50%;
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.avatarButton:hover,
+.avatarButton[aria-expanded="true"] {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: 230px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.dropdownProfile {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid #eef1f5;
+  margin-bottom: 4px;
+}
+
+.dropdownName,
+.dropdownEmail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #222;
+}
+
+.dropdownEmail {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #7b8494;
+}
+
+.dropdownItem {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  color: #273140;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: #f3f6fa;
+}
+
+.dropdownItemDanger {
+  color: #dc2626;
+}
+
+.authButton,
+.saveButton {
+  padding: 8px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.saveButton {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+  margin-top: 20px;
+}
+
+.loginNotice {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+.entryCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.recordView {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.recordFormBar {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  z-index: 9;
+}
+
+.entryForm {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+
+.entryStatus {
+  font-size: 13px;
+  color: #666;
+  margin-top: 28px;
+}
+
+.datePickerInput,
+.datePickerAlt {
+  min-width: 168px;
+  cursor: pointer;
+}
+
+.recordTable {
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.recordTable th {
+  padding: 0 10px 9px 0;
+  border-bottom: 1px solid #dfe5ee;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.recordTable td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid #eee;
+  color: #444;
+  vertical-align: middle;
+}
+
+.recordTable th:nth-child(1),
+.recordTable td:nth-child(1) {
+  width: 22%;
+}
+
+.recordTable th:nth-child(2),
+.recordTable td:nth-child(2) {
+  width: 16%;
+}
+
+.recordTable th:nth-child(3),
+.recordTable td:nth-child(3) {
+  width: 27%;
+}
+
+.recordTable th:nth-child(4),
+.recordTable td:nth-child(4) {
+  width: 35%;
+}
+
+.recordTable tr.editing {
+  background: #eff6ff;
+}
+
+.recordTable tr.editing td:first-child {
+  padding-left: 8px;
+}
+
+.recordEditRow td {
+  padding: 0 0 10px;
+  background: #eff6ff;
+}
+
+.recordEditPanel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.recordEditPanel label {
+  display: block;
+  min-width: 0;
+}
+
+.recordEditPanel .editDot {
+  align-self: center;
+  margin: 0;
+}
+
+.recordEditActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.recordEditActions .rowButton {
+  margin-left: 0;
+}
+
+.recordWeight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.recordEnteredAt {
+  color: #667085;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.recordActions {
+  text-align: right;
+  white-space: normal;
+}
+
+.rowButton {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 2px 0 2px 6px;
+}
+
+.rowButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.editButton {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.deleteButton {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.dangerButton {
+  border-color: #ef4444;
+  background: #ef4444;
+  color: #fff;
+}
+
+.saveRowButton {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.editDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+  vertical-align: middle;
+}
+
+.inlineDateInput {
+  display: inline-block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  margin-top: 0;
+  padding: 6px 9px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.inlineWeightSelects {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.inlineWeightSelects select {
+  width: 74px;
+  min-height: 36px;
+  margin-top: 0;
+  padding: 6px 28px 6px 9px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.pager {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  background: transparent;
+  padding: 0;
+}
+
+.pagerTotal {
+  color: #667085;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pagerControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #667085;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pagerControl select {
+  display: inline-block;
+  width: auto;
+  min-width: 72px;
+  min-height: 36px;
+  margin-top: 0;
+  padding: 6px 28px 6px 10px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.pager button {
+  padding: 6px 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.recordEmpty {
+  font-size: 14px;
+}
+
+/* JSON一括登録 */
+.bulkImport summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.bulkHint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #8a94a3;
+}
+
+.bulkImport textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.bulkDialog {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.bulkDialog textarea {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dialogActions .saveButton {
+  margin-top: 0;
+}
+
+.bulkImport button {
+  margin-top: 8px;
+}
+
+.bulkStatus {
+  margin-left: 10px;
+  font-size: 13px;
+  color: #666;
+}
+
+label {
+  font-size: 14px;
+  color: #444;
+}
+
+select,
+input[type="date"],
+input[type="number"],
+input[type="text"],
+input[type="email"] {
+  display: block;
+  margin-top: 4px;
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  /* 16px未満だとiOS Safariがフォーカス時に自動ズームする */
+  font-size: 16px;
+  line-height: 24px;
+  color: #222;
+  /* OS標準の見た目を外して高さ・幅をCSSで完全に揃える
+     (iOSのdate入力が固有幅を主張してはみ出すのも防ぐ) */
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* appearance:none で消えるセレクトの矢印を自前で描く */
+select {
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23667' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* iOS Safariのdate入力は内部が特殊なため、文字位置を明示的に揃える */
+input[type="date"] {
+  text-align: left;
+}
+
+/* 体重の選択式入力(整数部+小数部) */
+.weightSelects {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weightDot {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summaryItem {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.summaryValue {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.summarySub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #777;
+  min-height: 15px;
+}
+
+.chartCard,
+.notes {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.chartCard {
+  height: 520px;
+}
+
+.notes {
+  margin-top: 16px;
+}
+
+.recordPanel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 0;
+}
+
+.recordFooter {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.recordFooter > .authButton {
+  flex: 0 0 auto;
+}
+
+.notes h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.notesHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.notesHeader h2 {
+  margin-bottom: 0;
+}
+
+.readOnlyNotice {
+  font-size: 13px;
+  color: #667085;
+  white-space: nowrap;
+}
+
+.notes ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.myPagePanel {
+  width: min(480px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modalEyebrow {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #d8dee8;
+  border-radius: 50%;
+  background: #fff;
+  color: #445064;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.myPageForm {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.myPageForm input,
+.myPageForm select {
+  width: 100%;
+}
+
+.myPageForm input[readonly] {
+  background: #f8fafc;
+  color: #667085;
+}
+
+.myPagePreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.previewAvatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #075985;
+  font-weight: 700;
+}
+
+.myPagePreview strong,
+.myPagePreview span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.myPagePreview span {
+  margin-top: 2px;
+  font-size: 13px;
+  color: #667085;
+}
+
+.myPageActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.myPageActions .saveButton {
+  margin-top: 0;
+}
+
+.profileStatus {
+  min-height: 18px;
+  font-size: 13px;
+  color: #667085;
+}
+
+.flatpickr-calendar {
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+  border-color: #3b82f6;
+  background: #3b82f6;
+}
+
+.flatpickr-day.today {
+  border-color: #14b8a6;
+}
+
+@media (max-width: 760px) {
+  .container {
+    padding: 14px;
+  }
+
+  .stickyBar {
+    margin: 0 -14px;
+    padding: 6px 14px 0;
+  }
+
+  /* ログアウトは右上のまま維持し、メールアドレス表示だけ省く */
+  .userEmail {
+    display: none;
+  }
+
+  .authArea {
+    gap: 8px;
+  }
+
+  .userSwitch {
+    width: min(48vw, 200px);
+  }
+
+  .userDropdown {
+    width: min(230px, calc(100vw - 28px));
+  }
+
+  h1 {
+    font-size: 22px;
+    margin-bottom: 0;
+  }
+
+  .viewTabs button {
+    flex: 1;
+    padding: 12px;
+  }
+
+  .controls {
+    margin-top: 14px;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chartCard {
+    height: 420px;
+    padding: 12px 8px;
+  }
+
+  /* 日付・体重は1行に並べ、保存ボタンはその下に全幅で */
+  .entryForm label {
+    flex: 1;
+    min-width: 0; /* 内容(iOSのdate入力等)より縮めるようにして隣への食い込みを防ぐ */
+  }
+
+  .entryForm .datePickerAlt,
+  .entryForm .datePickerInput {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .weightSelects select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* グラフの期間プリセットは全幅で等分 */
+  .rangeBar {
+    width: 100%;
+  }
+
+  .rangeBar button {
+    flex: 1;
+    padding: 9px 0;
+  }
+
+  .saveButton {
+    margin-top: 0;
+    flex: 1 1 100%;
+    padding: 12px;
+  }
+
+  .entryStatus {
+    margin-top: 0;
+    flex: 1 1 100%;
+  }
+
+  .recordTable {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .recordTable th {
+    padding: 0 5px 7px 0;
+    font-size: 11px;
+  }
+
+  .recordTable td {
+    padding: 7px 5px 7px 0;
+  }
+
+  .recordTable th:nth-child(1),
+  .recordTable td:nth-child(1) {
+    width: 25%;
+  }
+
+  .recordTable th:nth-child(2),
+  .recordTable td:nth-child(2) {
+    width: 16%;
+  }
+
+  .recordTable th:nth-child(3),
+  .recordTable td:nth-child(3) {
+    width: 26%;
+  }
+
+  .recordTable th:nth-child(4),
+  .recordTable td:nth-child(4) {
+    width: 33%;
+  }
+
+  .recordEnteredAt {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .rowButton {
+    padding: 4px 6px;
+    font-size: 12px;
+    margin-left: 3px;
+  }
+
+  .inlineDateInput,
+  .inlineDateInput.datePickerAlt {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 34px;
+    padding: 5px 7px;
+    font-size: 12px;
+  }
+
+  .recordEditPanel {
+    grid-template-columns: auto 1fr;
+    align-items: end;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .recordEditPanel label {
+    grid-column: 2;
+  }
+
+  .recordEditPanel .editDot {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .recordEditActions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .recordEditActions .rowButton {
+    flex: 1 1 0;
+  }
+
+  .inlineWeightSelects {
+    gap: 2px;
+  }
+
+  .inlineWeightSelects select {
+    flex: 1;
+    width: auto;
+    min-height: 34px;
+    padding: 5px 22px 5px 7px;
+    font-size: 12px;
+  }
+
+  .recordFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .recordFooter > .authButton {
+    width: 100%;
+  }
+
+  .recordFooter .pager {
+    justify-content: center;
+  }
+
+  .pagerControl select {
+    min-width: 64px;
+  }
+
+  .notesHeader {
+    display: block;
+  }
+
+  .readOnlyNotice {
+    margin-top: 4px;
+    white-space: normal;
+  }
+
+  .modalBackdrop {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .myPagePanel {
+    max-height: calc(100vh - 24px);
+  }
+
+  .myPageActions {
+    justify-content: stretch;
+  }
+
+  .myPageActions .authButton,
+  .myPageActions .saveButton {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .header {
+    gap: 8px;
+  }
+
+  .userSwitch {
+    width: min(43vw, 160px);
+  }
+}
