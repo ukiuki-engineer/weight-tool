@@ -24,8 +24,12 @@ export function combineWeight(weightInt, weightDec) {
   return weightInt + weightDec / 10;
 }
 
-export function formatEnteredAt(value) {
-  if (!value) return "-";
+export function formatEnteredAt(value, fallbackDate = "") {
+  if (!value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(fallbackDate)
+      ? `${fallbackDate} 00:00`
+      : "-";
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   const year = date.getFullYear();

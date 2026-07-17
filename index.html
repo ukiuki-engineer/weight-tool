@@ -14,6 +14,7 @@
 </head>
 <body>
   <main class="container" id="app" v-cloak>
+    <app-notice></app-notice>
     <div class="stickyBar">
       <header class="header">
         <h1>体重管理</h1>
@@ -122,9 +123,8 @@
 
           <div class="myPageActions">
             <button type="button" class="authButton" @click="closeMyPage">キャンセル</button>
-            <button type="submit" class="saveButton">保存</button>
+            <button type="submit" class="saveButton" :disabled="myPageSaving">保存</button>
           </div>
-          <p class="profileStatus">{{ myPageStatus }}</p>
         </form>
       </section>
     </div>
@@ -138,6 +138,6 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.js"></script>
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=20260717-3"></script>
 </body>
 </html>

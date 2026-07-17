@@ -17,10 +17,10 @@ Claude Code は `CLAUDE.md`(このファイルをインポートする1行のみ
   - `js/sfc-loader.js` … vue3-sfc-loader の設定と SFC 用依存モジュールの受け渡し
   - `js/pages/Graph.vue` / `Summary.vue` / `Entry.vue` / `Target.vue` … ページコンポーネント
   - `js/components/RecordManager.vue` … 入力・目標画面の共通コンポーネント
-  - `js/components/DatePicker.vue` … Flatpickr を使う共通日付入力コンポーネント
-  - `js/services/firebase-store.js` … 認証と Firestore 読み書き
+  - `js/components/DatePicker.vue` / `AppNotice.vue` … 共通日付入力・全画面通知コンポーネント
+  - `js/services/firebase-store.js` / `notification.js` … Firebase処理と共通通知サービス
   - `js/config/firebase-config.js` … Firebase の接続設定
-  - `js/utils/record-utils.js` / `json-import.js` … 記録の変換・表示・JSON解析
+  - `js/utils/record-utils.js` / `json-import.js` / `export-records.js` … 記録の変換・表示・入出力
   - `js/chart.js` … グラフ計算・描画(Vue 非依存。records と表示条件を引数で受け取る)
   - `firestore.rules` / `firebase.json` … Firestore Security Rules とデプロイ設定
   - `manifest.webmanifest` / `icons/` … ホーム画面追加用のPWAマニフェストとアイコン(PNGは生成済みの成果物)

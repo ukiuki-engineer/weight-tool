@@ -205,7 +205,7 @@ p {
 
 /* 表示ユーザーの切り替え(管理者のみ表示) */
 .userSwitch {
-  width: clamp(190px, 22vw, 270px);
+  width: 210px;
   flex: 0 1 auto;
   min-width: 0;
 }
@@ -433,12 +433,16 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
   height: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
 .recordFormBar {
   flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   margin-bottom: 0;
   z-index: 9;
 }
@@ -450,12 +454,6 @@ p {
   flex-wrap: wrap;
 }
 
-
-.entryStatus {
-  font-size: 13px;
-  color: #666;
-  margin-top: 28px;
-}
 
 .datePickerInput,
 .datePickerAlt {
@@ -487,6 +485,10 @@ p {
   vertical-align: middle;
 }
 
+.recordTable td:first-child {
+  white-space: nowrap;
+}
+
 .recordTable th:nth-child(1),
 .recordTable td:nth-child(1) {
   width: 22%;
@@ -512,44 +514,18 @@ p {
 }
 
 .recordTable tr.editing td:first-child {
-  padding-left: 8px;
+  position: relative;
+  padding-left: 12px;
 }
 
-.recordEditRow td {
-  padding: 0 0 10px;
-  background: #eff6ff;
-}
-
-.recordEditPanel {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: end;
-  padding: 10px;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  background: #f8fbff;
-}
-
-.recordEditPanel label {
-  display: block;
-  min-width: 0;
-}
-
-.recordEditPanel .editDot {
-  align-self: center;
+.recordTable tr.editing td:first-child .editDot {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 6px;
+  height: 6px;
   margin: 0;
-}
-
-.recordEditActions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.recordEditActions .rowButton {
-  margin-left: 0;
+  transform: translateY(-50%);
 }
 
 .recordWeight {
@@ -617,46 +593,29 @@ p {
   vertical-align: middle;
 }
 
-.inlineDateInput {
-  display: inline-block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  min-height: 36px;
-  margin-top: 0;
-  padding: 6px 9px;
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.inlineWeightSelects {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 4px;
-  width: 100%;
-}
-
-.inlineWeightSelects select {
-  width: 74px;
-  min-height: 36px;
-  margin-top: 0;
-  padding: 6px 28px 6px 9px;
-  font-size: 14px;
-  line-height: 20px;
-}
-
 .pager {
   display: flex;
-  gap: 8px;
+  width: 100%;
+  gap: 16px;
   align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  justify-content: space-between;
   margin: 0;
   font-size: 14px;
   color: #555;
   background: transparent;
   padding: 0;
+}
+
+.pagerSummary,
+.pagerNavigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pagerNavigation {
+  justify-content: flex-end;
 }
 
 .pagerTotal {
@@ -686,11 +645,13 @@ p {
 }
 
 .pager button {
+  min-height: 36px;
   padding: 6px 16px;
   border: 1px solid #ccc;
   border-radius: 6px;
   background: #fff;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .pager button:disabled {
@@ -734,6 +695,71 @@ p {
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.dataIoDialog {
+  width: min(420px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.dataIoActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.dataIoActions .authButton {
+  width: 100%;
+  min-height: 44px;
+}
+
+.recordEditDialog {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.recordEditForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.recordEditForm label {
+  min-width: 0;
+}
+
+.editDateInput,
+.editDateInput.datePickerAlt {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.editWeightSelects {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.editWeightSelects select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.recordEditForm .dialogActions {
+  grid-column: 1 / -1;
 }
 
 .bulkDialog textarea {
@@ -871,6 +897,8 @@ input[type="date"] {
 
 .recordPanel {
   flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   margin-top: 0;
@@ -878,18 +906,20 @@ input[type="date"] {
 
 .recordFooter {
   display: flex;
+  flex-direction: column;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.recordFooter > .authButton {
-  flex: 0 0 auto;
+.recordFooter > .dataIoButton {
+  width: 100%;
 }
 
 .notes h2 {
@@ -930,6 +960,35 @@ input[type="date"] {
   justify-content: center;
   padding: 20px;
   background: rgba(17, 24, 39, 0.45);
+}
+
+.appNotice {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  left: 0;
+  z-index: 80;
+  width: 100vw;
+  padding: 14px 20px;
+  transform: translateY(-50%);
+  background: #15803d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.24);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 500ms ease;
+}
+
+.appNotice-error {
+  background: #b91c1c;
+}
+
+.appNotice-leaving {
+  opacity: 0;
 }
 
 .myPagePanel {
@@ -1043,12 +1102,6 @@ input[type="date"] {
   margin-top: 0;
 }
 
-.profileStatus {
-  min-height: 18px;
-  font-size: 13px;
-  color: #667085;
-}
-
 .flatpickr-calendar {
   border: 1px solid #dfe5ee;
   border-radius: 12px;
@@ -1090,7 +1143,7 @@ input[type="date"] {
   }
 
   .userSwitch {
-    width: min(48vw, 200px);
+    width: 170px;
   }
 
   .userDropdown {
@@ -1121,8 +1174,13 @@ input[type="date"] {
   }
 
   /* 日付・体重は1行に並べ、保存ボタンはその下に全幅で */
+  .entryForm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
   .entryForm label {
-    flex: 1;
+    width: 100%;
     min-width: 0; /* 内容(iOSのdate入力等)より縮めるようにして隣への食い込みを防ぐ */
   }
 
@@ -1135,6 +1193,12 @@ input[type="date"] {
 
   .weightSelects select {
     flex: 1;
+    width: 0;
+    min-width: 0;
+  }
+
+  .weightSelects {
+    width: 100%;
     min-width: 0;
   }
 
@@ -1148,15 +1212,11 @@ input[type="date"] {
     padding: 9px 0;
   }
 
-  .saveButton {
+  .entryForm > .saveButton {
+    grid-column: 1 / -1;
+    width: 100%;
     margin-top: 0;
-    flex: 1 1 100%;
     padding: 12px;
-  }
-
-  .entryStatus {
-    margin-top: 0;
-    flex: 1 1 100%;
   }
 
   .recordTable {
@@ -1175,12 +1235,12 @@ input[type="date"] {
 
   .recordTable th:nth-child(1),
   .recordTable td:nth-child(1) {
-    width: 25%;
+    width: 26%;
   }
 
   .recordTable th:nth-child(2),
   .recordTable td:nth-child(2) {
-    width: 16%;
+    width: 18%;
   }
 
   .recordTable th:nth-child(3),
@@ -1190,7 +1250,7 @@ input[type="date"] {
 
   .recordTable th:nth-child(4),
   .recordTable td:nth-child(4) {
-    width: 33%;
+    width: 30%;
   }
 
   .recordEnteredAt {
@@ -1204,66 +1264,33 @@ input[type="date"] {
     margin-left: 3px;
   }
 
-  .inlineDateInput,
-  .inlineDateInput.datePickerAlt {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 34px;
-    padding: 5px 7px;
-    font-size: 12px;
-  }
-
-  .recordEditPanel {
-    grid-template-columns: auto 1fr;
-    align-items: end;
-    gap: 8px;
-    padding: 8px;
-  }
-
-  .recordEditPanel label {
-    grid-column: 2;
-  }
-
-  .recordEditPanel .editDot {
-    grid-row: 1 / span 2;
-    align-self: center;
-  }
-
-  .recordEditActions {
-    grid-column: 1 / -1;
-    justify-content: stretch;
-  }
-
-  .recordEditActions .rowButton {
-    flex: 1 1 0;
-  }
-
-  .inlineWeightSelects {
-    gap: 2px;
-  }
-
-  .inlineWeightSelects select {
-    flex: 1;
-    width: auto;
-    min-height: 34px;
-    padding: 5px 22px 5px 7px;
-    font-size: 12px;
-  }
-
   .recordFooter {
-    flex-direction: column;
-    align-items: stretch;
     gap: 10px;
     padding: 10px;
   }
 
-  .recordFooter > .authButton {
-    width: 100%;
+  .recordFooter .pager {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
-  .recordFooter .pager {
-    justify-content: center;
+  .pagerSummary,
+  .pagerNavigation {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pagerNavigation {
+    display: grid;
+    grid-template-columns: minmax(56px, 1fr) auto auto minmax(56px, 1fr);
+    gap: 4px;
+  }
+
+  .pagerNavigation button {
+    width: 100%;
+    padding-right: 10px;
+    padding-left: 10px;
   }
 
   .pagerControl select {
@@ -1284,8 +1311,30 @@ input[type="date"] {
     padding: 12px;
   }
 
+  .recordEditBackdrop {
+    align-items: center;
+  }
+
   .myPagePanel {
     max-height: calc(100vh - 24px);
+  }
+
+  .recordEditDialog {
+    max-height: calc(100vh - 24px);
+  }
+
+  .recordEditForm {
+    grid-template-columns: 1fr;
+  }
+
+  .recordEditForm .dialogActions {
+    grid-column: 1;
+  }
+
+  .recordEditForm .dialogActions .authButton,
+  .recordEditForm .dialogActions .saveButton {
+    flex: 1 1 0;
+    width: auto;
   }
 
   .myPageActions {
@@ -1304,6 +1353,6 @@ input[type="date"] {
   }
 
   .userSwitch {
-    width: min(43vw, 160px);
+    width: 145px;
   }
 }

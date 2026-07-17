@@ -19,7 +19,6 @@
           </span>
         </label>
         <button type="submit" class="saveButton" :disabled="saving">保存</button>
-        <span class="entryStatus">{{ status }}</span>
       </form>
     </section>
 
@@ -44,9 +43,9 @@
                 {{ row.date }}
               </td>
               <td class="recordWeight">{{ row.weight.toFixed(1) }} kg</td>
-              <td class="recordEnteredAt">{{ formatEnteredAt(row.enteredAt) }}</td>
+              <td class="recordEnteredAt">{{ formatEnteredAt(row.enteredAt, row.date) }}</td>
               <td class="recordActions">
-                <template v-if="canEdit && !isEditing(row)">
+                <template v-if="canEdit">
                   <template v-if="confirmingDate === row.date">
                     <button type="button" class="rowButton dangerButton" @click="handleDelete(row)">
                       本当に削除
@@ -64,52 +63,6 @@
                 </template>
               </td>
             </tr>
-            <tr v-if="isEditing(row)" class="recordEditRow">
-              <td colspan="4">
-                <div class="recordEditPanel">
-                  <span class="editDot" aria-hidden="true"></span>
-                  <label>
-                    日付
-                    <DatePicker
-                      v-model="editDate"
-                      input-class="inlineDateInput"
-                      alt-format="Y-m-d"
-                      required
-                    />
-                  </label>
-                  <label>
-                    {{ config.weightLabel }}
-                    <span class="inlineWeightSelects">
-                      <select v-model.number="editWeightInt">
-                        <option v-for="n in intOptions" :key="n" :value="n">{{ n }}</option>
-                      </select>
-                      <span class="weightDot">.</span>
-                      <select v-model.number="editWeightDec">
-                        <option v-for="n in decOptions" :key="n" :value="n">{{ n }}</option>
-                      </select>
-                    </span>
-                  </label>
-                  <div class="recordEditActions">
-                    <button
-                      type="button"
-                      class="rowButton saveRowButton"
-                      :disabled="editingSaving"
-                      @click="handleRowSave(row)"
-                    >
-                      保存
-                    </button>
-                    <button
-                      type="button"
-                      class="rowButton"
-                      :disabled="editingSaving"
-                      @click="cancelEdit"
-                    >
-                      やめる
-                    </button>
-                  </div>
-                </div>
-              </td>
-            </tr>
           </template>
         </tbody>
       </table>
@@ -117,35 +70,120 @@
     </section>
 
     <footer v-if="canEdit || allRows.length > 0" class="recordFooter">
-      <button v-if="canEdit" type="button" class="authButton" @click="openImportDialog">
-        JSONで一括登録
-      </button>
       <div v-if="allRows.length > 0" class="pager">
-        <span class="pagerTotal">全{{ allRows.length }}件</span>
-        <label class="pagerControl">
-          表示件数
-          <select v-model.number="pageSize">
-            <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
-          </select>
-        </label>
-        <button type="button" :disabled="page <= 1" @click="page--">前へ</button>
-        <label class="pagerControl">
-          ページ
-          <select v-model.number="page">
-            <option v-for="n in pageOptions" :key="n" :value="n">{{ n }}</option>
-          </select>
-        </label>
-        <span class="pagerTotal">/ {{ totalPages }}ページ</span>
-        <button type="button" :disabled="page >= totalPages" @click="page++">次へ</button>
+        <div class="pagerSummary">
+          <span class="pagerTotal">全{{ allRows.length }}件</span>
+          <label class="pagerControl">
+            表示件数
+            <select v-model.number="pageSize">
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+            </select>
+          </label>
+        </div>
+        <div class="pagerNavigation">
+          <button type="button" :disabled="page <= 1" @click="page--">前へ</button>
+          <label class="pagerControl">
+            ページ
+            <select v-model.number="page">
+              <option v-for="n in pageOptions" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </label>
+          <span class="pagerTotal">/ {{ totalPages }}</span>
+          <button type="button" :disabled="page >= totalPages" @click="page++">次へ</button>
+        </div>
       </div>
+      <button
+        type="button"
+        class="authButton dataIoButton"
+        @click="openDataIoDialog"
+      >
+        データ入出力
+      </button>
     </footer>
+
+    <div v-if="isEditOpen" class="modalBackdrop recordEditBackdrop" @click.self="cancelEdit">
+      <section class="recordEditDialog" role="dialog" aria-modal="true" :aria-labelledby="editTitleId">
+        <div class="modalHeader">
+          <div>
+            <p class="modalEyebrow">編集</p>
+            <h2 :id="editTitleId">{{ config.editTitle }}</h2>
+          </div>
+          <button
+            type="button"
+            class="iconButton"
+            aria-label="閉じる"
+            :disabled="editingSaving"
+            @click="cancelEdit"
+          >
+            ×
+          </button>
+        </div>
+        <form class="recordEditForm" @submit.prevent="handleRowSave">
+          <label>
+            日付
+            <DatePicker v-model="editDate" input-class="editDateInput" required />
+          </label>
+          <label>
+            {{ config.weightLabel }}
+            <span class="editWeightSelects">
+              <select v-model.number="editWeightInt">
+                <option v-for="n in intOptions" :key="n" :value="n">{{ n }}</option>
+              </select>
+              <span class="weightDot">.</span>
+              <select v-model.number="editWeightDec">
+                <option v-for="n in decOptions" :key="n" :value="n">{{ n }}</option>
+              </select>
+            </span>
+          </label>
+          <div class="dialogActions">
+            <button type="button" class="authButton" :disabled="editingSaving" @click="cancelEdit">
+              キャンセル
+            </button>
+            <button type="submit" class="saveButton" :disabled="editingSaving">保存</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div v-if="dataIoOpen" class="modalBackdrop" @click.self="closeDataIoDialog">
+      <section class="dataIoDialog" role="dialog" aria-modal="true" :aria-labelledby="dataIoTitleId">
+        <div class="modalHeader">
+          <div>
+            <p class="modalEyebrow">データ</p>
+            <h2 :id="dataIoTitleId">データ入出力</h2>
+          </div>
+          <button type="button" class="iconButton" aria-label="閉じる" @click="closeDataIoDialog">×</button>
+        </div>
+        <div class="dataIoActions">
+          <button v-if="canEdit" type="button" class="authButton" @click="selectImport">
+            JSON一括入力
+          </button>
+          <button
+            v-if="allRows.length > 0"
+            type="button"
+            class="authButton"
+            @click="handleExport('csv')"
+          >
+            CSV出力
+          </button>
+          <button
+            v-if="allRows.length > 0"
+            type="button"
+            class="authButton"
+            @click="handleExport('json')"
+          >
+            JSON出力
+          </button>
+        </div>
+      </section>
+    </div>
 
     <div v-if="bulkOpen" class="modalBackdrop" @click.self="closeImportDialog">
       <section class="bulkDialog" role="dialog" aria-modal="true" :aria-labelledby="bulkTitleId">
         <div class="modalHeader">
           <div>
-            <p class="modalEyebrow">一括登録</p>
-            <h2 :id="bulkTitleId">JSONで一括登録</h2>
+            <p class="modalEyebrow">一括入力</p>
+            <h2 :id="bulkTitleId">JSON一括入力</h2>
           </div>
           <button type="button" class="iconButton" aria-label="閉じる" @click="closeImportDialog">×</button>
         </div>
@@ -162,7 +200,7 @@
 </template>
 
 <script>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import DatePicker from "./DatePicker.vue";
 import {
   deleteTarget,
@@ -172,7 +210,9 @@ import {
   saveWeight,
   saveWeights,
 } from "@weight-tool/firebase-store";
+import { downloadRecords } from "@weight-tool/export-records";
 import { parseRecordsJson } from "@weight-tool/json-import";
+import { showNotice } from "@weight-tool/notification";
 import {
   PAGE_SIZE_OPTIONS,
   combineWeight,
@@ -185,6 +225,7 @@ import {
 const KIND_CONFIG = {
   weight: {
     weightLabel: "体重[kg]",
+    editTitle: "記録を編集",
     emptyMessage: "まだ記録がありません。",
     readOnlyMessage: "",
     bulkExample: '形式: [ { date: "2026-05-13", weight: 111.3 }, ... ] — 旧data.jsのJS形式のコピペOK、同じ日付は上書き',
@@ -193,12 +234,12 @@ const KIND_CONFIG = {
     deleteOne: deleteWeight,
     saveMany: saveWeights,
     savedMessage: (date) => `${date} を保存しました。`,
-    editingMessage: (date) => `${date} を編集中です。`,
     deletedMessage: (row) => `${row.date} の記録(${row.weight.toFixed(1)}kg)を削除しました。`,
     readOnlyStatus: "記録は閲覧のみです。",
   },
   target: {
     weightLabel: "目標体重[kg]",
+    editTitle: "目標を編集",
     emptyMessage: "まだ目標がありません。",
     readOnlyMessage: "目標は閲覧のみです。",
     bulkExample: '形式: [ { date: "2026-07-31", weight: 104.5 }, ... ] — 旧data.jsのJS形式のコピペOK、同じ日付は上書き',
@@ -207,7 +248,6 @@ const KIND_CONFIG = {
     deleteOne: deleteTarget,
     saveMany: saveTargets,
     savedMessage: (date) => `${date} の目標を保存しました。`,
-    editingMessage: (date) => `${date} の目標を編集中です。`,
     deletedMessage: (row) => `${row.date} の目標(${row.weight.toFixed(1)}kg)を削除しました。`,
     readOnlyStatus: "目標は閲覧のみです。",
   },
@@ -256,8 +296,9 @@ export default {
   setup(props, { emit }) {
     const config = computed(() => KIND_CONFIG[props.kind] || KIND_CONFIG.weight);
     const bulkTitleId = computed(() => `${props.kind}BulkDialogTitle`);
+    const dataIoTitleId = computed(() => `${props.kind}DataIoDialogTitle`);
+    const editTitleId = computed(() => `${props.kind}EditDialogTitle`);
     const entryDate = ref(props.kind === "target" ? defaultTargetDate(props.rows) : todayString());
-    const status = ref("");
     const saving = ref(false);
     const page = ref(1);
     const pageSize = ref(PAGE_SIZE_OPTIONS[0]);
@@ -315,23 +356,22 @@ export default {
 
     async function handleSave() {
       if (!props.canEdit) {
-        status.value = config.value.readOnlyStatus;
+        showNotice(config.value.readOnlyStatus, "error", 4000);
         return;
       }
       const date = entryDate.value;
       const weight = combineWeight(entryWeightInt.value, entryWeightDec.value);
       if (!date) {
-        status.value = "日付を入力してください。";
+        showNotice("日付を入力してください。", "error", 4000);
         return;
       }
 
       const enteredAt = currentEnteredAt();
       saving.value = true;
-      status.value = "保存中…";
       try {
         await config.value.saveOne(props.uid, date, weight, enteredAt);
         emit("saved", { date, weight, enteredAt });
-        status.value = config.value.savedMessage(date);
+        showNotice(config.value.savedMessage(date));
         if (props.kind === "target") {
           entryDate.value = defaultTargetDate([
             ...props.rows,
@@ -339,7 +379,7 @@ export default {
           ]);
         }
       } catch (error) {
-        status.value = `保存に失敗しました: ${error.message}`;
+        showNotice(`保存に失敗しました: ${error.message}`, "error", 4000);
       } finally {
         saving.value = false;
       }
@@ -349,6 +389,8 @@ export default {
       return props.canEdit && editingDate.value === row.date;
     }
 
+    const isEditOpen = computed(() => editingDate.value !== null);
+
     function startEdit(row) {
       if (!props.canEdit) return;
       cancelDelete();
@@ -357,41 +399,43 @@ export default {
       editDate.value = row.date;
       editWeightInt.value = weight.int;
       editWeightDec.value = weight.dec;
-      status.value = config.value.editingMessage(row.date);
+    }
+
+    function resetEdit() {
+      editingDate.value = null;
+      editDate.value = "";
     }
 
     function cancelEdit() {
-      editingDate.value = null;
-      editDate.value = "";
-      editingSaving.value = false;
+      if (editingSaving.value) return;
+      resetEdit();
     }
 
-    async function handleRowSave(row) {
+    async function handleRowSave() {
       if (!props.canEdit) {
-        status.value = config.value.readOnlyStatus;
+        showNotice(config.value.readOnlyStatus, "error", 4000);
         return;
       }
-      const previousDate = editingDate.value || row.date;
+      const previousDate = editingDate.value;
       const date = editDate.value;
       const weight = combineWeight(editWeightInt.value, editWeightDec.value);
       if (!date) {
-        status.value = "日付を入力してください。";
+        showNotice("日付を入力してください。", "error", 4000);
         return;
       }
 
       const enteredAt = currentEnteredAt();
       editingSaving.value = true;
-      status.value = "保存中…";
       try {
         await config.value.saveOne(props.uid, date, weight, enteredAt);
         if (previousDate !== date) {
           await config.value.deleteOne(props.uid, previousDate);
         }
         emit("saved", { date, weight, enteredAt, previousDate });
-        cancelEdit();
-        status.value = config.value.savedMessage(date);
+        resetEdit();
+        showNotice(config.value.savedMessage(date));
       } catch (error) {
-        status.value = `保存に失敗しました: ${error.message}`;
+        showNotice(`保存に失敗しました: ${error.message}`, "error", 4000);
       } finally {
         editingSaving.value = false;
       }
@@ -414,17 +458,16 @@ export default {
 
     async function handleDelete(row) {
       if (!props.canEdit) {
-        status.value = config.value.readOnlyStatus;
+        showNotice(config.value.readOnlyStatus, "error", 4000);
         return;
       }
       cancelDelete();
-      status.value = "削除中…";
       try {
         await config.value.deleteOne(props.uid, row.date);
         emit("deleted", { date: row.date });
-        status.value = config.value.deletedMessage(row);
+        showNotice(config.value.deletedMessage(row));
       } catch (error) {
-        status.value = `削除に失敗しました: ${error.message}`;
+        showNotice(`削除に失敗しました: ${error.message}`, "error", 4000);
       }
     }
 
@@ -432,9 +475,24 @@ export default {
     const bulkText = ref("");
     const bulkStatus = ref("");
     const importing = ref(false);
+    const dataIoOpen = ref(false);
+
+    function openDataIoDialog() {
+      dataIoOpen.value = true;
+    }
+
+    function closeDataIoDialog() {
+      dataIoOpen.value = false;
+    }
+
+    function selectImport() {
+      closeDataIoDialog();
+      openImportDialog();
+    }
 
     function openImportDialog() {
       if (!props.canEdit) return;
+      bulkStatus.value = "";
       bulkOpen.value = true;
     }
 
@@ -459,19 +517,37 @@ export default {
       try {
         await config.value.saveMany(props.uid, rows);
         emit("imported", rows);
-        bulkStatus.value = `${rows.length}件を登録しました。`;
         bulkText.value = "";
+        bulkStatus.value = "";
         bulkOpen.value = false;
+        showNotice(`${rows.length}件を登録しました。`);
       } catch (error) {
-        bulkStatus.value = `登録に失敗しました: ${error.message}`;
+        bulkStatus.value = "";
+        showNotice(`登録に失敗しました: ${error.message}`, "error", 4000);
       } finally {
         importing.value = false;
       }
     }
 
+    function handleExport(format) {
+      try {
+        downloadRecords(allRows.value, props.kind, format);
+        closeDataIoDialog();
+        showNotice(`${format.toUpperCase()}を出力しました。`);
+      } catch (error) {
+        showNotice(`出力に失敗しました: ${error.message}`, "error", 4000);
+      }
+    }
+
+    onBeforeUnmount(() => {
+      clearTimeout(confirmTimer);
+    });
+
     return {
       config,
       bulkTitleId,
+      dataIoTitleId,
+      editTitleId,
       entryDate,
       entryWeightInt,
       entryWeightDec,
@@ -480,7 +556,6 @@ export default {
       editWeightDec,
       intOptions,
       decOptions,
-      status,
       saving,
       editingSaving,
       page,
@@ -494,6 +569,7 @@ export default {
       formatEnteredAt,
       handleSave,
       isEditing,
+      isEditOpen,
       startEdit,
       cancelEdit,
       handleRowSave,
@@ -504,9 +580,14 @@ export default {
       bulkText,
       bulkStatus,
       importing,
+      dataIoOpen,
+      openDataIoDialog,
+      closeDataIoDialog,
+      selectImport,
       openImportDialog,
       closeImportDialog,
       handleImport,
+      handleExport,
     };
   },
 };

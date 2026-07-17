@@ -485,6 +485,7 @@ export function drawChart(
         x: {
           min: initialWindow.min,
           max: initialWindow.max,
+          offset: true,
           ticks: {
             maxRotation: 0,
             autoSkip: true,

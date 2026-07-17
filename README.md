@@ -2,6 +2,8 @@
 
 体重の測定値と目標値を記録し、7日移動平均と目標体重を比較するグラフツール。
 
+入力・目標データは全件をCSVまたはJSONで出力できます。
+
 ## 技術要素
 
 - Vue 3(CDN版) + vue3-sfc-loader(SFCをブラウザでコンパイル)
@@ -17,7 +19,7 @@
 - `users/{uid}/weights/{YYYY-MM-DD}` … `{ weight: number, enteredAt?: string }`
 - `users/{uid}/targets/{YYYY-MM-DD}` … `{ weight: number, enteredAt?: string }`
 
-`enteredAt` は更新日時のISO文字列。既存データのように未設定の場合は画面で `-` 表示。
+`enteredAt` は更新日時のISO文字列。既存データのように未設定の場合は、画面上で対象日の `00:00` として表示します。
 
 管理者権限はソースコードにUIDを書かず、`users/{uid}` の `admin` で管理します。
 一般ユーザーが `admin` を変更できないように Firestore Security Rules で保護してください。

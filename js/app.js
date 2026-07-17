@@ -9,7 +9,8 @@ import {
   loadUserAccess,
   saveUserSettings,
 } from "./services/firebase-store.js";
-import { loadSfc } from "./sfc-loader.js";
+import { showNotice } from "./services/notification.js";
+import { loadSfc } from "./sfc-loader.js?v=20260717-3";
 
 const VIEW_OPTIONS = [
   { value: "graph", label: "グラフ" },
@@ -34,9 +35,20 @@ const GraphView = defineAsyncComponent(() => loadSfc("./pages/Graph.vue"));
 const SummaryView = defineAsyncComponent(() => loadSfc("./pages/Summary.vue"));
 const EntryView = defineAsyncComponent(() => loadSfc("./pages/Entry.vue"));
 const TargetView = defineAsyncComponent(() => loadSfc("./pages/Target.vue"));
+const AppNotice = defineAsyncComponent(() => loadSfc("./components/AppNotice.vue"));
+
+function authUserName(authUser) {
+  return authUser?.displayName?.trim()
+    || authUser?.email?.split("@")[0]
+    || "ユーザー";
+}
+
+function ownUserLabel(name) {
+  return `${name}（自分）`;
+}
 
 createApp({
-  components: { GraphView, SummaryView, EntryView, TargetView },
+  components: { AppNotice, GraphView, SummaryView, EntryView, TargetView },
   setup() {
     const user = ref(null);
     const ready = ref(false);
@@ -53,7 +65,7 @@ createApp({
     const userNameDraft = ref("");
     const userMemoDraft = ref("");
     const userDefaultViewDraft = ref("graph");
-    const myPageStatus = ref("");
+    const myPageSaving = ref(false);
 
     // 表示中ユーザーのUID(管理者は他ユーザーに切り替えて読み書きできる)
     const viewUid = ref(null);
@@ -80,6 +92,18 @@ createApp({
       userName.value = typeof settings.name === "string" ? settings.name : "";
       userMemo.value = typeof settings.memo === "string" ? settings.memo : "";
       userDefaultView.value = normalizeDefaultView(settings.defaultView);
+    }
+
+    function updateOwnUserOption(name) {
+      if (!user.value) return;
+      const option = {
+        uid: user.value.uid,
+        name: ownUserLabel(name?.trim() || authUserName(user.value)),
+      };
+      userOptions.value = [
+        option,
+        ...userOptions.value.filter((current) => current.uid !== user.value.uid),
+      ];
     }
 
     function toggleUserMenu() {
@@ -132,7 +156,7 @@ createApp({
 
     async function loadAccessFor(authUser) {
       isAdmin.value = false;
-      userOptions.value = [{ uid: authUser.uid, name: "自分" }];
+      userOptions.value = [{ uid: authUser.uid, name: ownUserLabel(authUserName(authUser)) }];
 
       try {
         const access = await loadUserAccess();
@@ -140,10 +164,15 @@ createApp({
         applyUserSettings(access.currentUser);
         view.value = userDefaultView.value;
         isAdmin.value = access.isAdmin;
+        const ownOption = {
+          uid: authUser.uid,
+          name: ownUserLabel(access.currentUser.name || authUserName(authUser)),
+        };
+        userOptions.value = [ownOption];
         if (!access.isAdmin) return;
 
         userOptions.value = [
-          { uid: authUser.uid, name: "自分" },
+          ownOption,
           ...access.users.filter((option) => option.uid !== authUser.uid),
         ];
       } catch (error) {
@@ -156,13 +185,11 @@ createApp({
       userNameDraft.value = userName.value || user.value?.displayName || "";
       userMemoDraft.value = userMemo.value;
       userDefaultViewDraft.value = userDefaultView.value;
-      myPageStatus.value = "";
       myPageOpen.value = true;
     }
 
     function closeMyPage() {
       myPageOpen.value = false;
-      myPageStatus.value = "";
     }
 
     async function saveMyPage() {
@@ -172,13 +199,16 @@ createApp({
         memo: userMemoDraft.value.trim(),
         defaultView: normalizeDefaultView(userDefaultViewDraft.value),
       };
-      myPageStatus.value = "保存中…";
+      myPageSaving.value = true;
       try {
         const saved = await saveUserSettings(settings);
         applyUserSettings(saved);
-        myPageStatus.value = "マイページを保存しました。";
+        updateOwnUserOption(saved.name);
+        showNotice("マイページを保存しました。");
       } catch (error) {
-        myPageStatus.value = `保存に失敗しました: ${error.message}`;
+        showNotice(`保存に失敗しました: ${error.message}`, "error", 4000);
+      } finally {
+        myPageSaving.value = false;
       }
     }
 
@@ -188,7 +218,7 @@ createApp({
       try {
         await logout();
       } catch (error) {
-        message.value = `ログアウトに失敗しました: ${error.message}`;
+        showNotice(`ログアウトに失敗しました: ${error.message}`, "error", 4000);
       }
     }
 
@@ -335,7 +365,7 @@ createApp({
       userNameDraft,
       userMemoDraft,
       userDefaultViewDraft,
-      myPageStatus,
+      myPageSaving,
       displayName,
       avatarInitial,
       defaultViewPreview,

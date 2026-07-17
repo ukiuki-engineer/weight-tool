@@ -1,7 +1,9 @@
 import * as chartModule from "./chart.js";
 import * as firebaseStoreModule from "./services/firebase-store.js";
+import * as notificationModule from "./services/notification.js";
+import * as exportRecordsModule from "./utils/export-records.js";
 import * as jsonImportModule from "./utils/json-import.js";
-import * as recordUtilsModule from "./utils/record-utils.js";
+import * as recordUtilsModule from "./utils/record-utils.js?v=20260717-3";
 
 const loader = window["vue3-sfc-loader"];
 
@@ -14,6 +16,8 @@ const options = {
     vue: Vue,
     "@weight-tool/chart": chartModule,
     "@weight-tool/firebase-store": firebaseStoreModule,
+    "@weight-tool/notification": notificationModule,
+    "@weight-tool/export-records": exportRecordsModule,
     "@weight-tool/json-import": jsonImportModule,
     "@weight-tool/record-utils": recordUtilsModule,
   },
