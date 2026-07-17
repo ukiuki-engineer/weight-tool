@@ -1,9 +1,9 @@
 import * as chartModule from "./chart.js";
-import * as firebaseStoreModule from "./services/firebase-store.js";
+import * as firebaseStoreModule from "./services/firebase-store.js?v=20260717-4";
 import * as notificationModule from "./services/notification.js";
-import * as exportRecordsModule from "./utils/export-records.js";
+import * as exportRecordsModule from "./utils/export-records.js?v=20260717-4";
 import * as jsonImportModule from "./utils/json-import.js";
-import * as recordUtilsModule from "./utils/record-utils.js?v=20260717-3";
+import * as recordUtilsModule from "./utils/record-utils.js?v=20260717-4";
 
 const loader = window["vue3-sfc-loader"];
 

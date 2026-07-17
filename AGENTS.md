@@ -9,7 +9,7 @@ Claude Code は `CLAUDE.md`(このファイルをインポートする1行のみ
 - ビルド工程はありません。`python3 -m http.server 8000` で起動し `http://localhost:8000/` を開くと動きます(`file://` 直接は不可)。
 - UI は Vue 3(CDN のグローバルビルド) + vue3-sfc-loader(CDN)で `.vue` をブラウザ内コンパイルします。グラフ描画は Chart.js + chartjs-plugin-zoom + hammer.js(いずれも CDN)、Firebase SDK は gstatic の ES モジュール CDN を使っています。
 - 画面構成: HTML は `index.html` 1枚で、「グラフ」「サマリー」「入力」「目標」の4画面をタブで切り替えます(vue-router は使わない。ビュー切替は `view` 変数と v-show)。ヘッダーとタブは sticky でスクロール追従します。
-- 権限は2層: Firestore ルール(サーバー側の強制)+ UI の出し分け。管理者は `users/{uid}` の `admin: true` で判定し、`users` コレクションから切り替え対象を取得します。一般ユーザーは自分の測定値のみ読み書き可、自分の目標は閲覧のみです。
+- 権限は2層: Firestore ルール(サーバー側の強制)+ UI の出し分け。管理者は `users/{uid}` の `isAdmin: true` で判定し、`users` コレクションから切り替え対象を取得します。一般ユーザーは自分の測定値のみ読み書き可、自分の目標は閲覧のみです。
 - ディレクトリ構成:
   - `index.html` … ルート画面(ヘッダー、タブ、ビュー呼び出し)と CDN 読み込み
   - `css/style.css` … 全スタイル
@@ -23,6 +23,7 @@ Claude Code は `CLAUDE.md`(このファイルをインポートする1行のみ
   - `js/utils/record-utils.js` / `json-import.js` / `export-records.js` … 記録の変換・表示・入出力
   - `js/chart.js` … グラフ計算・描画(Vue 非依存。records と表示条件を引数で受け取る)
   - `firestore.rules` / `firebase.json` … Firestore Security Rules とデプロイ設定
+  - `tools/firestore-migrations/` … Firestoreサーバークライアントを使う独立したマイグレーションツール
   - `manifest.webmanifest` / `icons/` … ホーム画面追加用のPWAマニフェストとアイコン(PNGは生成済みの成果物)
 - `firebase-config.js` はシークレットではないためコミット対象です(データ保護は Firestore のセキュリティルール側)。
 - UID や管理者一覧をソースコードへ直接記述しないでください。ユーザー名と管理者権限は Firestore の `users/{uid}` で管理します。
@@ -34,7 +35,7 @@ Claude Code は `CLAUDE.md`(このファイルをインポートする1行のみ
 
 - Vue 3(CDN) + vue3-sfc-loader + Vue SFC の構成を維持してください。
 - UI コンポーネントは `.vue` に `<template>` と `<script>` を記述し、テンプレート文字列を通常の `.js` に戻さないでください。
-- npm パッケージやビルドツールは追加しないでください(ライブラリは CDN 読み込みのみ)。
+- フロントエンドにnpmパッケージやビルドツールは追加しないでください(ライブラリはCDN読み込みのみ)。`tools/firestore-migrations/`の管理用依存はフロントエンドから分離します。
 - 体重・目標値のデータ形式は `README.md` の「データ構造(Firestore)」に合わせてください。
 - 日付文字列は `YYYY-MM-DD` を使い、既存のローカル日付処理に合わせてください。
 - 表示文言は日本語で、現在の UI の短い表現に揃えてください。
@@ -49,6 +50,7 @@ node --check js/app.js
 node --check js/sfc-loader.js
 node --check js/chart.js
 node --check js/services/firebase-store.js
+cd tools/firestore-migrations && npm test
 ```
 
 - ブラウザ確認:
@@ -68,4 +70,5 @@ python3 -m http.server 8000
 - `buildSummary(weights, targets)` がサマリーカード用の配列を返します(全期間データから現在の状況を計算)。
 - 体重の入力は選択式(整数部30〜200 + 小数部0〜9)。初期値は直近の記録から補完します。
 - 目標線は日次補間値(`targetForDiff`)で連続描画し、マーカーは目標を入力した日付にのみ表示します。差分判定も同じ補間値を使います。
-- Firestore のデータ構造は `users/{uid}/weights/{YYYY-MM-DD}` と `users/{uid}/targets/{YYYY-MM-DD}`(いずれも `{ weight: number }`)。
+- Firestore の記録データは`users/{uid}/weights/{YYYY-MM-DD}`と`users/{uid}/targets/{YYYY-MM-DD}`で、`weight`, `createdAt`, `updatedAt`を保持します。旧`enteredAt`はマイグレーション完了まで読み取り互換のみ維持します。
+- Firestoreマイグレーションは`tools/firestore-migrations/migrations/`の日時付きファイルで管理し、適用済み履歴は`_migrations`コレクションに保存します。認証情報はコードへ書かずApplication Default Credentialsを使います。

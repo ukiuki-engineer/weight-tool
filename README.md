@@ -15,17 +15,21 @@
 
 ## データ構造(Firestore)
 
-- `users/{uid}` … `{ name: string, memo: string, defaultView: string, admin?: boolean }`
-- `users/{uid}/weights/{YYYY-MM-DD}` … `{ weight: number, enteredAt?: string }`
-- `users/{uid}/targets/{YYYY-MM-DD}` … `{ weight: number, enteredAt?: string }`
+- `users/{uid}` … `{ name: string, memo: string, defaultView: string, isAdmin: boolean }`
+- `users/{uid}/weights/{YYYY-MM-DD}` … `{ weight: number, createdAt: Timestamp, updatedAt: Timestamp }`
+- `users/{uid}/targets/{YYYY-MM-DD}` … `{ weight: number, createdAt: Timestamp, updatedAt: Timestamp }`
 
-`enteredAt` は更新日時のISO文字列。既存データのように未設定の場合は、画面上で対象日の `00:00` として表示します。
+既存の`enteredAt`は移行完了まで読み取り互換を維持します。更新日時がない既存データは、画面上で対象日の`00:00`として表示します。
 
-管理者権限はソースコードにUIDを書かず、`users/{uid}` の `admin` で管理します。
-一般ユーザーが `admin` を変更できないように Firestore Security Rules で保護してください。
+管理者権限はソースコードにUIDを書かず、`users/{uid}`の`isAdmin`で管理します。
+一般ユーザーが`isAdmin`を変更できないようにFirestore Security Rulesで保護してください。
 マイページ設定は `users/{uid}` に保存し、ブラウザのlocalStorageやIndexedDBには保存しません。Firebase Authのログイン状態はsessionStorageに限定します。
 Security Rulesは `firestore.rules` で管理し、`firebase.json` からデプロイします。
 `users/{uid}` が存在しない場合は初回ログイン時に作成し、管理者のユーザー切り替え一覧へ登録します。
+
+## Firestoreマイグレーション
+
+マイグレーションツールは`tools/firestore-migrations/`にあり、フロントエンドとは依存関係を分離しています。設定・認証・実行方法は[専用README](./tools/firestore-migrations/README.md)を参照してください。
 
 
 ## ローカルでの動作確認

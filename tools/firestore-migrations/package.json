@@ -1,0 +1,17 @@
+{
+  "name": "weight-tool-firestore-migrations",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "migrate": "node --env-file-if-exists=.env.local migrate.mjs",
+    "migrate:status": "node --env-file-if-exists=.env.local migrate.mjs --status",
+    "migrate:dry-run": "node --env-file-if-exists=.env.local migrate.mjs --dry-run",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0"
+  }
+}

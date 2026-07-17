@@ -7,7 +7,8 @@ function exportRows(rows) {
     .map((row) => ({
       date: row.date,
       weight: Number(row.weight),
-      ...(row.enteredAt ? { enteredAt: row.enteredAt } : {}),
+      ...(row.createdAt ? { createdAt: row.createdAt } : {}),
+      ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     }));
 }
 
@@ -17,12 +18,13 @@ function escapeCsv(value) {
 }
 
 export function recordsToCsv(rows) {
-  const lines = ["日付,体重,更新日時"];
+  const lines = ["日付,体重,作成日時,更新日時"];
   exportRows(rows).forEach((row) => {
     lines.push([
       escapeCsv(row.date),
       escapeCsv(row.weight),
-      escapeCsv(row.enteredAt || ""),
+      escapeCsv(row.createdAt || ""),
+      escapeCsv(row.updatedAt || ""),
     ].join(","));
   });
   return `\uFEFF${lines.join("\r\n")}\r\n`;

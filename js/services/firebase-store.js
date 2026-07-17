@@ -19,10 +19,13 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  deleteField,
+  runTransaction,
+  serverTimestamp,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-import { currentEnteredAt } from "../utils/record-utils.js";
+import { currentTimestamp } from "../utils/record-utils.js?v=20260717-4";
 
 const app = initializeApp(firebaseConfig);
 const auth = initializeAuth(app, {
@@ -55,7 +58,7 @@ function userFromSnapshot(docSnap) {
     name: typeof data.name === "string" ? data.name.trim() : "",
     memo: typeof data.memo === "string" ? data.memo.trim() : "",
     defaultView: typeof data.defaultView === "string" ? data.defaultView : "graph",
-    isAdmin: data.admin === true,
+    isAdmin: typeof data.isAdmin === "boolean" ? data.isAdmin : data.admin === true,
   };
 }
 
@@ -77,7 +80,7 @@ function usersFromSnapshot(snapshot) {
     .sort((a, b) => a.name.localeCompare(b.name, "ja"));
 }
 
-// users/{uid} の admin で権限を判定し、管理者だけがユーザー一覧を取得する。
+// users/{uid} の isAdmin で権限を判定し、管理者だけがユーザー一覧を取得する。
 export async function loadUserAccess() {
   const currentUser = requireCurrentUser();
   const currentUserRef = doc(db, "users", currentUser.uid);
@@ -88,6 +91,7 @@ export async function loadUserAccess() {
       name: createdUser.name,
       memo: createdUser.memo,
       defaultView: createdUser.defaultView,
+      isAdmin: false,
     });
     return { isAdmin: false, currentUser: createdUser, users: [createdUser] };
   }
@@ -108,7 +112,7 @@ export async function saveUserSettings({ name, memo, defaultView }) {
   return settings;
 }
 
-function normalizeEnteredAt(value) {
+function normalizeTimestamp(value) {
   if (typeof value === "string") return value;
   if (typeof value?.toDate === "function") return value.toDate().toISOString();
   if (typeof value?.seconds === "number") {
@@ -124,7 +128,8 @@ function recordsFromSnapshot(snapshot) {
       return {
         date: docSnap.id,
         weight: data.weight,
-        enteredAt: normalizeEnteredAt(data.enteredAt),
+        createdAt: normalizeTimestamp(data.createdAt),
+        updatedAt: normalizeTimestamp(data.updatedAt || data.enteredAt),
       };
     })
     .filter((row) => row.date && typeof row.weight === "number");
@@ -151,18 +156,44 @@ function docFor(uid, col, date) {
 }
 
 // 同じ日付は上書き
-export async function saveWeight(uid, date, weight, enteredAt = currentEnteredAt()) {
-  await setDoc(docFor(uid, "weights", date), { weight, enteredAt });
-  return { enteredAt };
+async function saveRecord(uid, col, date, weight) {
+  const recordRef = docFor(uid, col, date);
+  const localTimestamp = currentTimestamp();
+  let createdAt = "";
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(recordRef);
+    if (snapshot.exists()) {
+      createdAt = normalizeTimestamp(snapshot.data().createdAt);
+      transaction.set(recordRef, {
+        weight,
+        updatedAt: serverTimestamp(),
+        enteredAt: deleteField(),
+      }, { merge: true });
+      return;
+    }
+
+    createdAt = localTimestamp;
+    transaction.set(recordRef, {
+      weight,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  });
+
+  return { createdAt, updatedAt: localTimestamp };
+}
+
+export async function saveWeight(uid, date, weight) {
+  return saveRecord(uid, "weights", date, weight);
 }
 
 export async function deleteWeight(uid, date) {
   await deleteDoc(docFor(uid, "weights", date));
 }
 
-export async function saveTarget(uid, date, weight, enteredAt = currentEnteredAt()) {
-  await setDoc(docFor(uid, "targets", date), { weight, enteredAt });
-  return { enteredAt };
+export async function saveTarget(uid, date, weight) {
+  return saveRecord(uid, "targets", date, weight);
 }
 
 export async function deleteTarget(uid, date) {
@@ -171,22 +202,49 @@ export async function deleteTarget(uid, date) {
 
 // 一括登録。Firestoreのバッチ上限(500件)を避けて分割書き込みする
 async function saveMany(uid, col, records) {
+  const existingSnapshot = await getDocs(collection(db, "users", uid, col));
+  const existingByDate = new Map(
+    existingSnapshot.docs.map((snapshot) => [snapshot.id, snapshot.data()]),
+  );
+  const localTimestamp = currentTimestamp();
+  const savedRecords = records.map((row) => {
+    const existing = existingByDate.get(row.date);
+    return {
+      ...row,
+      createdAt: existing ? normalizeTimestamp(existing.createdAt) : localTimestamp,
+      updatedAt: localTimestamp,
+    };
+  });
+
   for (let i = 0; i < records.length; i += 400) {
     const batch = writeBatch(db);
     for (const row of records.slice(i, i + 400)) {
-      batch.set(docFor(uid, col, row.date), {
-        weight: row.weight,
-        enteredAt: row.enteredAt || currentEnteredAt(),
-      });
+      const recordRef = docFor(uid, col, row.date);
+      if (existingByDate.has(row.date)) {
+        batch.set(recordRef, {
+          weight: row.weight,
+          updatedAt: serverTimestamp(),
+          enteredAt: deleteField(),
+        }, { merge: true });
+      } else {
+        batch.set(recordRef, {
+          weight: row.weight,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        existingByDate.set(row.date, {});
+      }
     }
     await batch.commit();
   }
+
+  return savedRecords;
 }
 
 export async function saveWeights(uid, records) {
-  await saveMany(uid, "weights", records);
+  return saveMany(uid, "weights", records);
 }
 
 export async function saveTargets(uid, records) {
-  await saveMany(uid, "targets", records);
+  return saveMany(uid, "targets", records);
 }

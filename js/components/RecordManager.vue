@@ -43,7 +43,7 @@
                 {{ row.date }}
               </td>
               <td class="recordWeight">{{ row.weight.toFixed(1) }} kg</td>
-              <td class="recordEnteredAt">{{ formatEnteredAt(row.enteredAt, row.date) }}</td>
+              <td class="recordEnteredAt">{{ formatUpdatedAt(row.updatedAt, row.date) }}</td>
               <td class="recordActions">
                 <template v-if="canEdit">
                   <template v-if="confirmingDate === row.date">
@@ -216,10 +216,8 @@ import { showNotice } from "@weight-tool/notification";
 import {
   PAGE_SIZE_OPTIONS,
   combineWeight,
-  currentEnteredAt,
-  formatEnteredAt,
+  formatUpdatedAt,
   splitWeight,
-  withEnteredAt,
 } from "@weight-tool/record-utils";
 
 const KIND_CONFIG = {
@@ -366,16 +364,15 @@ export default {
         return;
       }
 
-      const enteredAt = currentEnteredAt();
       saving.value = true;
       try {
-        await config.value.saveOne(props.uid, date, weight, enteredAt);
-        emit("saved", { date, weight, enteredAt });
+        const timestamps = await config.value.saveOne(props.uid, date, weight);
+        emit("saved", { date, weight, ...timestamps });
         showNotice(config.value.savedMessage(date));
         if (props.kind === "target") {
           entryDate.value = defaultTargetDate([
             ...props.rows,
-            { date, weight, enteredAt },
+            { date, weight, ...timestamps },
           ]);
         }
       } catch (error) {
@@ -424,14 +421,13 @@ export default {
         return;
       }
 
-      const enteredAt = currentEnteredAt();
       editingSaving.value = true;
       try {
-        await config.value.saveOne(props.uid, date, weight, enteredAt);
+        const timestamps = await config.value.saveOne(props.uid, date, weight);
         if (previousDate !== date) {
           await config.value.deleteOne(props.uid, previousDate);
         }
-        emit("saved", { date, weight, enteredAt, previousDate });
+        emit("saved", { date, weight, ...timestamps, previousDate });
         resetEdit();
         showNotice(config.value.savedMessage(date));
       } catch (error) {
@@ -511,16 +507,15 @@ export default {
         bulkStatus.value = error;
         return;
       }
-      const rows = withEnteredAt(parsed);
       importing.value = true;
-      bulkStatus.value = `${rows.length}件を登録中…`;
+      bulkStatus.value = `${parsed.length}件を登録中…`;
       try {
-        await config.value.saveMany(props.uid, rows);
-        emit("imported", rows);
+        const savedRows = await config.value.saveMany(props.uid, parsed);
+        emit("imported", savedRows);
         bulkText.value = "";
         bulkStatus.value = "";
         bulkOpen.value = false;
-        showNotice(`${rows.length}件を登録しました。`);
+        showNotice(`${savedRows.length}件を登録しました。`);
       } catch (error) {
         bulkStatus.value = "";
         showNotice(`登録に失敗しました: ${error.message}`, "error", 4000);
@@ -566,7 +561,7 @@ export default {
       totalPages,
       pageOptions,
       pagedRows,
-      formatEnteredAt,
+      formatUpdatedAt,
       handleSave,
       isEditing,
       isEditOpen,

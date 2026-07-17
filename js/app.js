@@ -8,9 +8,9 @@ import {
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js";
+} from "./services/firebase-store.js?v=20260717-4";
 import { showNotice } from "./services/notification.js";
-import { loadSfc } from "./sfc-loader.js?v=20260717-3";
+import { loadSfc } from "./sfc-loader.js?v=20260717-4";
 
 const VIEW_OPTIONS = [
   { value: "graph", label: "グラフ" },
@@ -283,11 +283,11 @@ createApp({
     });
 
     // 入力画面で保存されたら records に反映する(同日付は上書き)
-    function onSaved({ date, weight, enteredAt = "", previousDate = null }) {
+    function onSaved({ date, weight, createdAt = "", updatedAt = "", previousDate = null }) {
       const replacedDates = new Set([date, previousDate].filter(Boolean));
       records.weights = [
         ...records.weights.filter((row) => !replacedDates.has(row.date)),
-        { date, weight, enteredAt },
+        { date, weight, createdAt, updatedAt },
       ];
     }
 
@@ -295,11 +295,11 @@ createApp({
       records.weights = records.weights.filter((row) => row.date !== date);
     }
 
-    function onTargetSaved({ date, weight, enteredAt = "", previousDate = null }) {
+    function onTargetSaved({ date, weight, createdAt = "", updatedAt = "", previousDate = null }) {
       const replacedDates = new Set([date, previousDate].filter(Boolean));
       records.targets = [
         ...records.targets.filter((row) => !replacedDates.has(row.date)),
-        { date, weight, enteredAt },
+        { date, weight, createdAt, updatedAt },
       ];
     }
 

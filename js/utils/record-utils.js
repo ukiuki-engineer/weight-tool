@@ -1,15 +1,8 @@
 // 体重・目標記録で共通利用する変換・表示処理。
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
-export function currentEnteredAt() {
+export function currentTimestamp() {
   return new Date().toISOString();
-}
-
-export function withEnteredAt(records, enteredAt = currentEnteredAt()) {
-  return records.map((row) => ({
-    ...row,
-    enteredAt: row.enteredAt || enteredAt,
-  }));
 }
 
 export function splitWeight(weight, fallback = 60) {
@@ -24,7 +17,7 @@ export function combineWeight(weightInt, weightDec) {
   return weightInt + weightDec / 10;
 }
 
-export function formatEnteredAt(value, fallbackDate = "") {
+export function formatUpdatedAt(value, fallbackDate = "") {
   if (!value) {
     return /^\d{4}-\d{2}-\d{2}$/.test(fallbackDate)
       ? `${fallbackDate} 00:00`
