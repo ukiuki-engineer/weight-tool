@@ -5,10 +5,11 @@ import {
   onAuth,
   login,
   logout,
+  canUseSessionStorage,
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js?v=20260717-4";
+} from "./services/firebase-store.js?v=20260719-3";
 import { showNotice } from "./services/notification.js";
 import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 
@@ -37,6 +38,8 @@ const EntryView = defineAsyncComponent(() => loadSfc("./pages/Entry.vue"));
 const TargetView = defineAsyncComponent(() => loadSfc("./pages/Target.vue"));
 const AppNotice = defineAsyncComponent(() => loadSfc("./components/AppNotice.vue"));
 
+const EMBEDDED_BROWSER_PATTERN = /\b(FBAN|FBAV|FBIOS|FB_IAB|Instagram|Line\/|Twitter|GSA\/|TikTok|BytedanceWebview|MicroMessenger|Slack|Discord)\b/i;
+
 function authUserName(authUser) {
   return authUser?.displayName?.trim()
     || authUser?.email?.split("@")[0]
@@ -45,6 +48,17 @@ function authUserName(authUser) {
 
 function ownUserLabel(name) {
   return `${name}（自分）`;
+}
+
+function loginEnvironmentWarning() {
+  if (!canUseSessionStorage()) {
+    return "このブラウザではログイン用の一時保存が使えません。SafariまたはChromeで開き直してください。";
+  }
+  const userAgent = window.navigator?.userAgent || "";
+  if (EMBEDDED_BROWSER_PATTERN.test(userAgent)) {
+    return "アプリ内ブラウザではGoogleログインが失敗することがあります。SafariまたはChromeで開き直してください。";
+  }
+  return "";
 }
 
 createApp({
@@ -67,6 +81,8 @@ createApp({
     const userDefaultViewDraft = ref("graph");
     const myPageSaving = ref(false);
     const loggingIn = ref(false);
+    const loginWarning = ref(loginEnvironmentWarning());
+    const loginBlocked = computed(() => Boolean(loginWarning.value));
 
     // 表示中ユーザーのUID(管理者は他ユーザーに切り替えて読み書きできる)
     const viewUid = ref(null);
@@ -239,6 +255,11 @@ createApp({
 
     async function handleLogin() {
       if (loggingIn.value) return;
+      loginWarning.value = loginEnvironmentWarning();
+      if (loginBlocked.value) {
+        message.value = loginWarning.value;
+        return;
+      }
       loggingIn.value = true;
       message.value = "ログイン中…";
       try {
@@ -372,6 +393,8 @@ createApp({
       userDefaultViewDraft,
       myPageSaving,
       loggingIn,
+      loginWarning,
+      loginBlocked,
       displayName,
       avatarInitial,
       defaultViewPreview,

@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
-  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./css/style.css?v=20260719-2" />
 </head>
 <body>
   <main class="container" id="app" v-cloak>
@@ -71,9 +71,10 @@
           </div>
         </div>
         <p class="loginMessage">{{ message }}</p>
-        <button type="button" class="loginButton" :disabled="loggingIn" @click="handleLogin">
+        <p v-if="loginWarning" class="loginWarning">{{ loginWarning }}</p>
+        <button type="button" class="loginButton" :disabled="loggingIn || loginBlocked" @click="handleLogin">
           <span class="googleMark" aria-hidden="true">G</span>
-          {{ loggingIn ? "ログイン中…" : "Googleでログイン" }}
+          {{ loggingIn ? "ログイン中…" : (loginBlocked ? "ブラウザで開いてください" : "Googleでログイン") }}
         </button>
         <p class="loginFootnote">ログイン状態はこのブラウザのセッション中だけ保持します。</p>
       </div>
@@ -155,6 +156,6 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.js"></script>
-  <script type="module" src="./js/app.js?v=20260718-1"></script>
+  <script type="module" src="./js/app.js?v=20260719-3"></script>
 </body>
 </html>

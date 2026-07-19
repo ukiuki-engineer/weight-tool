@@ -423,7 +423,8 @@ p {
 
 .loginCard,
 .loginLoadingCard {
-  width: min(520px, 100%);
+  width: 100%;
+  max-width: 520px;
   border: 1px solid #e0e7ef;
   border-radius: 16px;
   background: #fff;
@@ -474,6 +475,19 @@ p {
   color: #4b5563;
   font-size: 15px;
   line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.loginWarning {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #f3c56b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #8a5a00;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .loginButton {
@@ -492,6 +506,7 @@ p {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  overflow-wrap: anywhere;
 }
 
 .loginButton:hover:not(:disabled) {

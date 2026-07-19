@@ -5,6 +5,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebas
 import {
   initializeAuth,
   browserSessionPersistence,
+  inMemoryPersistence,
   browserPopupRedirectResolver,
   GoogleAuthProvider,
   signInWithPopup,
@@ -27,19 +28,53 @@ import {
 
 import { currentTimestamp } from "../utils/record-utils.js?v=20260717-4";
 
+const LOGIN_STORAGE_ERROR_MESSAGE = "このブラウザではログイン用の一時保存が使えません。SafariまたはChromeで開き直してください。";
+
+export function canUseSessionStorage() {
+  if (typeof window === "undefined") return false;
+  try {
+    const storage = window.sessionStorage;
+    if (!storage) return false;
+    const key = `weight-tool-auth-check-${Date.now()}`;
+    storage.setItem(key, "1");
+    storage.removeItem(key);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 const app = initializeApp(firebaseConfig);
 const auth = initializeAuth(app, {
-  persistence: browserSessionPersistence,
+  persistence: canUseSessionStorage() ? browserSessionPersistence : inMemoryPersistence,
   popupRedirectResolver: browserPopupRedirectResolver,
 });
 const db = getFirestore(app);
+
+function isAuthStorageError(error) {
+  return error?.code === "auth/web-storage-unsupported"
+    || error?.code === "auth/operation-not-supported-in-this-environment"
+    || error?.message?.includes("sessionStorage")
+    || error?.message?.includes("missing initial state")
+    || error?.message?.includes("Unable to save initial state");
+}
 
 export function onAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-export function login() {
-  return signInWithPopup(auth, new GoogleAuthProvider());
+export async function login() {
+  if (!canUseSessionStorage()) {
+    throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
+  }
+  try {
+    return await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (error) {
+    if (isAuthStorageError(error)) {
+      throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
+    }
+    throw error;
+  }
 }
 
 export function logout() {
