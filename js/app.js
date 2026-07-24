@@ -7,11 +7,10 @@ import {
   logout,
   canUseSessionStorage,
   completeRedirectLogin,
-  consumeRedirectLoginMarker,
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js?v=20260724-3";
+} from "./services/firebase-store.js?v=20260724-4";
 import { showNotice } from "./services/notification.js";
 import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 
@@ -285,12 +284,8 @@ createApp({
     }
 
     async function checkRedirectLogin() {
-      const hadRedirectLogin = consumeRedirectLoginMarker();
       try {
-        const result = await completeRedirectLogin();
-        if (hadRedirectLogin && !result && !user.value) {
-          redirectLoginError = "Googleログインの結果を受け取れませんでした。もう一度ログインしてください。";
-        }
+        await completeRedirectLogin();
       } catch (error) {
         redirectLoginError = `ログインに失敗しました: ${error.message}`;
       } finally {

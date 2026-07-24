@@ -9,8 +9,7 @@ import {
   browserPopupRedirectResolver,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithCredential,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
@@ -31,7 +30,10 @@ import {
 import { currentTimestamp } from "../utils/record-utils.js?v=20260717-4";
 
 const LOGIN_STORAGE_ERROR_MESSAGE = "このブラウザではログイン用の一時保存が使えません。SafariまたはChromeで開き直してください。";
-const REDIRECT_LOGIN_PARAM = "loginRedirect";
+const GOOGLE_LOGIN_STATE_KEY = "weight-tool-google-login-state";
+const GOOGLE_LOGIN_STATE_COOKIE = "weight_tool_google_login_state";
+const GOOGLE_LOGIN_STATE_MAX_AGE_MS = 10 * 60 * 1000;
+const LEGACY_REDIRECT_LOGIN_PARAM = "loginRedirect";
 
 export function canUseSessionStorage() {
   if (typeof window === "undefined") return false;
@@ -82,29 +84,118 @@ function isIosDevice() {
     || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
-function shouldUseRedirectLogin() {
+function shouldUseManualGoogleLogin() {
   return isStandaloneApp() || isIosDevice();
 }
 
-function setRedirectLoginMarker(enabled) {
-  if (typeof window === "undefined" || !window.history?.replaceState) return false;
+function appContinueUri() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete(LEGACY_REDIRECT_LOGIN_PARAM);
+  url.hash = "";
+  return url.toString();
+}
+
+function clearGoogleLoginHash() {
+  if (typeof window === "undefined" || !window.history?.replaceState) return;
   try {
     const url = new URL(window.location.href);
-    const hadMarker = url.searchParams.get(REDIRECT_LOGIN_PARAM) === "google";
-    if (enabled) {
-      url.searchParams.set(REDIRECT_LOGIN_PARAM, "google");
-    } else {
-      url.searchParams.delete(REDIRECT_LOGIN_PARAM);
-    }
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    return hadMarker;
+    url.searchParams.delete(LEGACY_REDIRECT_LOGIN_PARAM);
+    url.hash = "";
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
   } catch (error) {
-    return false;
   }
 }
 
-export function consumeRedirectLoginMarker() {
-  return setRedirectLoginMarker(false);
+function googleLoginCookieAttributes(maxAgeSeconds) {
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  return `; Max-Age=${maxAgeSeconds}; Path=/; SameSite=Lax${secure}`;
+}
+
+function googleLoginStateFromCookie() {
+  if (typeof document === "undefined") return null;
+  const cookies = document.cookie ? document.cookie.split("; ") : [];
+  const prefix = `${GOOGLE_LOGIN_STATE_COOKIE}=`;
+  const cookie = cookies.find((row) => row.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+}
+
+function saveGoogleLoginStateCookie(value) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${GOOGLE_LOGIN_STATE_COOKIE}=${encodeURIComponent(value)}${googleLoginCookieAttributes(600)}`;
+}
+
+function clearGoogleLoginStateCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${GOOGLE_LOGIN_STATE_COOKIE}=${googleLoginCookieAttributes(0)}`;
+}
+
+function pendingGoogleLoginState() {
+  const cookieState = googleLoginStateFromCookie();
+  if (!canUseSessionStorage()) return cookieState;
+  try {
+    const raw = window.sessionStorage.getItem(GOOGLE_LOGIN_STATE_KEY);
+    if (!raw) return cookieState;
+    const state = JSON.parse(raw);
+    if (!state?.value || Date.now() - Number(state.createdAt) > GOOGLE_LOGIN_STATE_MAX_AGE_MS) {
+      window.sessionStorage.removeItem(GOOGLE_LOGIN_STATE_KEY);
+      return cookieState;
+    }
+    return state.value;
+  } catch (error) {
+    return cookieState;
+  }
+}
+
+function savePendingGoogleLoginState(value) {
+  if (!canUseSessionStorage()) {
+    throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
+  }
+  window.sessionStorage.setItem(GOOGLE_LOGIN_STATE_KEY, JSON.stringify({
+    value,
+    createdAt: Date.now(),
+  }));
+  saveGoogleLoginStateCookie(value);
+}
+
+function clearPendingGoogleLoginState() {
+  clearGoogleLoginStateCookie();
+  if (!canUseSessionStorage()) return;
+  try {
+    window.sessionStorage.removeItem(GOOGLE_LOGIN_STATE_KEY);
+  } catch (error) {
+  }
+}
+
+async function createGoogleAuthUri() {
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${encodeURIComponent(firebaseConfig.apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providerId: "google.com",
+        continueUri: appContinueUri(),
+        customParameter: { prompt: "select_account" },
+      }),
+    },
+  );
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.authUri) {
+    const detail = result.error?.message || "認証URLを取得できませんでした";
+    throw new Error(`Googleログインを開始できませんでした: ${detail}`);
+  }
+  return result.authUri;
+}
+
+async function loginWithManualGoogleRedirect() {
+  const authUri = await createGoogleAuthUri();
+  const state = new URL(authUri).searchParams.get("state");
+  if (!state) {
+    throw new Error("Googleログインの状態を作成できませんでした。");
+  }
+  savePendingGoogleLoginState(state);
+  window.location.assign(authUri);
+  return new Promise(() => {});
 }
 
 export function onAuth(callback) {
@@ -112,14 +203,37 @@ export function onAuth(callback) {
 }
 
 export async function completeRedirectLogin() {
-  if (!canUseSessionStorage()) return null;
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const params = new URLSearchParams(hash);
+  const idToken = params.get("id_token");
+  const error = params.get("error");
+  const returnedState = params.get("state");
+
+  if (!idToken && !error) return null;
+
+  clearGoogleLoginHash();
   try {
-    return await getRedirectResult(auth);
+    if (error) {
+      const detail = params.get("error_description") || error;
+      throw new Error(`Googleログインがキャンセルまたは拒否されました: ${detail}`);
+    }
+
+    const expectedState = pendingGoogleLoginState();
+    if (!expectedState || returnedState !== expectedState) {
+      throw new Error("Googleログインの状態を確認できませんでした。もう一度ログインしてください。");
+    }
+
+    return await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
   } catch (error) {
     if (isAuthStorageError(error)) {
       throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
     }
     throw error;
+  } finally {
+    clearPendingGoogleLoginState();
   }
 }
 
@@ -128,13 +242,12 @@ export async function login() {
     throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
   }
   try {
-    if (shouldUseRedirectLogin()) {
-      setRedirectLoginMarker(true);
-      return await signInWithRedirect(auth, googleProvider());
+    if (shouldUseManualGoogleLogin()) {
+      return await loginWithManualGoogleRedirect();
     }
     return await signInWithPopup(auth, googleProvider());
   } catch (error) {
-    setRedirectLoginMarker(false);
+    clearPendingGoogleLoginState();
     if (isAuthStorageError(error)) {
       throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
     }
