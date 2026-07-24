@@ -7,10 +7,11 @@ import {
   logout,
   canUseSessionStorage,
   completeRedirectLogin,
+  consumeRedirectLoginMarker,
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js?v=20260724-1";
+} from "./services/firebase-store.js?v=20260724-3";
 import { showNotice } from "./services/notification.js";
 import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 
@@ -82,8 +83,18 @@ createApp({
     const userDefaultViewDraft = ref("graph");
     const myPageSaving = ref(false);
     const loggingIn = ref(false);
+    const checkingRedirectLogin = ref(true);
     const loginWarning = ref(loginEnvironmentWarning());
     const loginBlocked = computed(() => Boolean(loginWarning.value));
+    const loginDisabled = computed(() =>
+      loggingIn.value || checkingRedirectLogin.value || loginBlocked.value,
+    );
+    const loginButtonLabel = computed(() => {
+      if (checkingRedirectLogin.value) return "確認中…";
+      if (loggingIn.value) return "ログイン中…";
+      if (loginBlocked.value) return "ブラウザで開いてください";
+      return "Googleでログイン";
+    });
     let redirectLoginError = "";
 
     // 表示中ユーザーのUID(管理者は他ユーザーに切り替えて読み書きできる)
@@ -273,12 +284,24 @@ createApp({
       }
     }
 
-    completeRedirectLogin().catch((error) => {
-      redirectLoginError = `ログインに失敗しました: ${error.message}`;
-      if (!user.value) {
-        message.value = redirectLoginError;
+    async function checkRedirectLogin() {
+      const hadRedirectLogin = consumeRedirectLoginMarker();
+      try {
+        const result = await completeRedirectLogin();
+        if (hadRedirectLogin && !result && !user.value) {
+          redirectLoginError = "Googleログインの結果を受け取れませんでした。もう一度ログインしてください。";
+        }
+      } catch (error) {
+        redirectLoginError = `ログインに失敗しました: ${error.message}`;
+      } finally {
+        checkingRedirectLogin.value = false;
+        if (!user.value) {
+          message.value = redirectLoginError || "Googleでログインするとデータを表示します。";
+        }
       }
-    });
+    }
+
+    checkRedirectLogin();
 
     onAuth(async (authUser) => {
       user.value = authUser;
@@ -290,6 +313,10 @@ createApp({
         userMenuOpen.value = false;
         myPageOpen.value = false;
         applyUserSettings();
+        if (checkingRedirectLogin.value) {
+          message.value = "確認中…";
+          return;
+        }
         message.value = redirectLoginError || "Googleでログインするとデータを表示します。";
         return;
       }
@@ -402,8 +429,11 @@ createApp({
       userDefaultViewDraft,
       myPageSaving,
       loggingIn,
+      checkingRedirectLogin,
       loginWarning,
       loginBlocked,
+      loginDisabled,
+      loginButtonLabel,
       displayName,
       avatarInitial,
       defaultViewPreview,

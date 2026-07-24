@@ -31,6 +31,7 @@ import {
 import { currentTimestamp } from "../utils/record-utils.js?v=20260717-4";
 
 const LOGIN_STORAGE_ERROR_MESSAGE = "このブラウザではログイン用の一時保存が使えません。SafariまたはChromeで開き直してください。";
+const REDIRECT_LOGIN_PARAM = "loginRedirect";
 
 export function canUseSessionStorage() {
   if (typeof window === "undefined") return false;
@@ -71,6 +72,41 @@ export function isStandaloneApp() {
     || window.matchMedia?.("(display-mode: standalone)")?.matches === true;
 }
 
+function isIosDevice() {
+  if (typeof window === "undefined") return false;
+  const navigator = window.navigator || {};
+  const platform = navigator.platform || "";
+  const userAgent = navigator.userAgent || "";
+  return /\biP(hone|ad|od)\b/.test(platform)
+    || /\biP(hone|ad|od)\b/.test(userAgent)
+    || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function shouldUseRedirectLogin() {
+  return isStandaloneApp() || isIosDevice();
+}
+
+function setRedirectLoginMarker(enabled) {
+  if (typeof window === "undefined" || !window.history?.replaceState) return false;
+  try {
+    const url = new URL(window.location.href);
+    const hadMarker = url.searchParams.get(REDIRECT_LOGIN_PARAM) === "google";
+    if (enabled) {
+      url.searchParams.set(REDIRECT_LOGIN_PARAM, "google");
+    } else {
+      url.searchParams.delete(REDIRECT_LOGIN_PARAM);
+    }
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    return hadMarker;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function consumeRedirectLoginMarker() {
+  return setRedirectLoginMarker(false);
+}
+
 export function onAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
@@ -92,11 +128,13 @@ export async function login() {
     throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
   }
   try {
-    if (isStandaloneApp()) {
+    if (shouldUseRedirectLogin()) {
+      setRedirectLoginMarker(true);
       return await signInWithRedirect(auth, googleProvider());
     }
     return await signInWithPopup(auth, googleProvider());
   } catch (error) {
+    setRedirectLoginMarker(false);
     if (isAuthStorageError(error)) {
       throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
     }

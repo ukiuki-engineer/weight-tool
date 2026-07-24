@@ -72,9 +72,9 @@
         </div>
         <p class="loginMessage">{{ message }}</p>
         <p v-if="loginWarning" class="loginWarning">{{ loginWarning }}</p>
-        <button type="button" class="loginButton" :disabled="loggingIn || loginBlocked" @click="handleLogin">
+        <button type="button" class="loginButton" :disabled="loginDisabled" @click="handleLogin">
           <span class="googleMark" aria-hidden="true">G</span>
-          {{ loggingIn ? "ログイン中…" : (loginBlocked ? "ブラウザで開いてください" : "Googleでログイン") }}
+          {{ loginButtonLabel }}
         </button>
         <p class="loginFootnote">ログイン状態はこのブラウザのセッション中だけ保持します。</p>
       </div>
@@ -156,6 +156,6 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.js"></script>
-  <script type="module" src="./js/app.js?v=20260724-1"></script>
+  <script type="module" src="./js/app.js?v=20260724-3"></script>
 </body>
 </html>
