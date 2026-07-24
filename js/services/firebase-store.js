@@ -9,6 +9,8 @@ import {
   browserPopupRedirectResolver,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
@@ -59,8 +61,30 @@ function isAuthStorageError(error) {
     || error?.message?.includes("Unable to save initial state");
 }
 
+function googleProvider() {
+  return new GoogleAuthProvider();
+}
+
+export function isStandaloneApp() {
+  if (typeof window === "undefined") return false;
+  return window.navigator?.standalone === true
+    || window.matchMedia?.("(display-mode: standalone)")?.matches === true;
+}
+
 export function onAuth(callback) {
   return onAuthStateChanged(auth, callback);
+}
+
+export async function completeRedirectLogin() {
+  if (!canUseSessionStorage()) return null;
+  try {
+    return await getRedirectResult(auth);
+  } catch (error) {
+    if (isAuthStorageError(error)) {
+      throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
+    }
+    throw error;
+  }
 }
 
 export async function login() {
@@ -68,7 +92,10 @@ export async function login() {
     throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);
   }
   try {
-    return await signInWithPopup(auth, new GoogleAuthProvider());
+    if (isStandaloneApp()) {
+      return await signInWithRedirect(auth, googleProvider());
+    }
+    return await signInWithPopup(auth, googleProvider());
   } catch (error) {
     if (isAuthStorageError(error)) {
       throw new Error(LOGIN_STORAGE_ERROR_MESSAGE);

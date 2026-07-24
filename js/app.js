@@ -6,10 +6,11 @@ import {
   login,
   logout,
   canUseSessionStorage,
+  completeRedirectLogin,
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js?v=20260719-3";
+} from "./services/firebase-store.js?v=20260724-1";
 import { showNotice } from "./services/notification.js";
 import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 
@@ -83,6 +84,7 @@ createApp({
     const loggingIn = ref(false);
     const loginWarning = ref(loginEnvironmentWarning());
     const loginBlocked = computed(() => Boolean(loginWarning.value));
+    let redirectLoginError = "";
 
     // 表示中ユーザーのUID(管理者は他ユーザーに切り替えて読み書きできる)
     const viewUid = ref(null);
@@ -271,6 +273,13 @@ createApp({
       }
     }
 
+    completeRedirectLogin().catch((error) => {
+      redirectLoginError = `ログインに失敗しました: ${error.message}`;
+      if (!user.value) {
+        message.value = redirectLoginError;
+      }
+    });
+
     onAuth(async (authUser) => {
       user.value = authUser;
       if (!authUser) {
@@ -281,7 +290,7 @@ createApp({
         userMenuOpen.value = false;
         myPageOpen.value = false;
         applyUserSettings();
-        message.value = "Googleでログインするとデータを表示します。";
+        message.value = redirectLoginError || "Googleでログインするとデータを表示します。";
         return;
       }
       applyUserSettings();
