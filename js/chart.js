@@ -101,6 +101,8 @@ function interpolateTarget(dateString, targets) {
 }
 
 function calculateMovingAverage(dateString, weightMap) {
+  if (!weightMap.has(dateString)) return null;
+
   const current = parseDate(dateString);
   const today = parseDate(formatDate(new Date()));
   if (current > today) return null;
