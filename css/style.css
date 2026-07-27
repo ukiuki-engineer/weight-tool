@@ -661,6 +661,32 @@ p {
   white-space: nowrap;
 }
 
+.sortHeaderButton {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sortHeaderButton:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+}
+
+.sortHeaderIcon {
+  color: #3b82f6;
+  font-size: 13px;
+  line-height: 1;
+}
+
 .recordTable td {
   padding: 8px 10px 8px 0;
   border-bottom: 1px solid #eee;
@@ -1468,6 +1494,7 @@ input[type="date"] {
 
   .authButton:hover:not(:disabled),
   .rowButton:hover:not(:disabled),
+  .sortHeaderButton:hover,
   .pager button:hover:not(:disabled),
   .dataIoActions .authButton:hover:not(:disabled) {
     border-color: #3b82f6;

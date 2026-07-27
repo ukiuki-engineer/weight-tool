@@ -29,7 +29,17 @@
       <table class="recordTable">
         <thead>
           <tr>
-            <th>日付</th>
+            <th :aria-sort="dateSortAria">
+              <button
+                type="button"
+                class="sortHeaderButton"
+                :aria-label="dateSortLabel"
+                @click="toggleDateSort"
+              >
+                <span>日付</span>
+                <span class="sortHeaderIcon" aria-hidden="true">{{ dateSortIcon }}</span>
+              </button>
+            </th>
             <th class="recordWeight">体重</th>
             <th>更新日時</th>
             <th class="recordActions"></th>
@@ -278,7 +288,7 @@ const KIND_CONFIG = {
     emptyMessage: "まだ記録がありません。",
     readOnlyMessage: "",
     bulkExample: '形式: [ { date: "2026-05-13", weight: 111.3 }, ... ] — 旧data.jsのJS形式のコピペOK、同じ日付は上書き',
-    sortOrder: "desc",
+    defaultSortOrder: "desc",
     saveOne: saveWeight,
     deleteOne: deleteWeight,
     saveMany: saveWeights,
@@ -293,7 +303,7 @@ const KIND_CONFIG = {
     emptyMessage: "まだ目標がありません。",
     readOnlyMessage: "目標は閲覧のみです。",
     bulkExample: '形式: [ { date: "2026-07-31", weight: 104.5 }, ... ] — 旧data.jsのJS形式のコピペOK、同じ日付は上書き',
-    sortOrder: "asc",
+    defaultSortOrder: "asc",
     saveOne: saveTarget,
     deleteOne: deleteTarget,
     saveMany: saveTargets,
@@ -332,6 +342,12 @@ function defaultTargetDate(targets) {
   return formatDate(new Date(last.getFullYear(), last.getMonth() + 2, 0));
 }
 
+function compareByDate(a, b, order) {
+  if (a.date === b.date) return 0;
+  const result = a.date < b.date ? -1 : 1;
+  return order === "asc" ? result : -result;
+}
+
 export default {
   name: "RecordManager",
   components: { DatePicker },
@@ -350,6 +366,7 @@ export default {
     const deleteTitleId = computed(() => `${props.kind}DeleteDialogTitle`);
     const editTitleId = computed(() => `${props.kind}EditDialogTitle`);
     const entryDate = ref(props.kind === "target" ? defaultTargetDate(props.rows) : todayString());
+    const sortOrder = ref(config.value.defaultSortOrder);
     const saving = ref(false);
     const page = ref(1);
     const pageSize = ref(PAGE_SIZE_OPTIONS[0]);
@@ -360,11 +377,22 @@ export default {
     const editingSaving = ref(false);
 
     const allRows = computed(() =>
-      [...props.rows].sort((a, b) => {
-        if (config.value.sortOrder === "asc") return a.date < b.date ? -1 : 1;
-        return a.date < b.date ? 1 : -1;
-      }),
+      [...props.rows].sort((a, b) => compareByDate(a, b, sortOrder.value)),
     );
+    const dateSortAria = computed(() =>
+      sortOrder.value === "asc" ? "ascending" : "descending",
+    );
+    const dateSortIcon = computed(() => (sortOrder.value === "asc" ? "↑" : "↓"));
+    const dateSortLabel = computed(() =>
+      sortOrder.value === "asc"
+        ? "日付で昇順に並んでいます。降順に切り替え"
+        : "日付で降順に並んでいます。昇順に切り替え",
+    );
+
+    function toggleDateSort() {
+      sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+      page.value = 1;
+    }
 
     function initialWeightValue() {
       if (props.kind === "target") {
@@ -613,11 +641,16 @@ export default {
       deleteCandidate,
       isDeleteOpen,
       allRows,
+      sortOrder,
+      dateSortAria,
+      dateSortIcon,
+      dateSortLabel,
       totalPages,
       pageOptions,
       pagedRows,
       formatUpdatedAt,
       handleSave,
+      toggleDateSort,
       isEditing,
       isEditOpen,
       startEdit,
