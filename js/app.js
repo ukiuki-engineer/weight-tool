@@ -10,7 +10,7 @@ import {
   loadRecords,
   loadUserAccess,
   saveUserSettings,
-} from "./services/firebase-store.js?v=20260724-4";
+} from "./services/firebase-store.js?v=20260727-2";
 import { showNotice } from "./services/notification.js";
 import { loadSfc } from "./sfc-loader.js?v=20260718-1";
 

@@ -74,18 +74,8 @@ export function isStandaloneApp() {
     || window.matchMedia?.("(display-mode: standalone)")?.matches === true;
 }
 
-function isIosDevice() {
-  if (typeof window === "undefined") return false;
-  const navigator = window.navigator || {};
-  const platform = navigator.platform || "";
-  const userAgent = navigator.userAgent || "";
-  return /\biP(hone|ad|od)\b/.test(platform)
-    || /\biP(hone|ad|od)\b/.test(userAgent)
-    || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
 function shouldUseManualGoogleLogin() {
-  return isStandaloneApp() || isIosDevice();
+  return isStandaloneApp();
 }
 
 function appContinueUri() {
