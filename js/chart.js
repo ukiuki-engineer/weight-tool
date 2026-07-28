@@ -13,6 +13,7 @@ const CONFIG = {
   minMovingAverageCount: 1,
   breakLineAfterDaysWithoutMeasurement: 7,
 };
+const RANGE_MONTHS = { "1m": 1, "3m": 3, "6m": 6 };
 
 function parseDate(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -32,8 +33,18 @@ function addDays(date, days) {
   return next;
 }
 
+function addMonths(date, months) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
 function getMonthEnd(date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+function getToday() {
+  return parseDate(formatDate(new Date()));
 }
 
 function diffDays(a, b) {
@@ -46,14 +57,69 @@ function sortRecords(records) {
   return [...records].sort((a, b) => parseDate(a.date) - parseDate(b.date));
 }
 
-function getDateRange(weightRecords, targetRecords) {
+function firstWeightDateInWindow(weightDates, minLabel, maxLabel) {
+  return weightDates.find((date) => date >= minLabel && date <= maxLabel);
+}
+
+function getDateRange(weightRecords, targetRecords, extraRanges = []) {
   const dates = [...weightRecords, ...targetRecords].map((row) =>
     parseDate(row.date),
   );
+  dates.push(getToday());
+  for (const range of extraRanges) {
+    dates.push(range.min, range.max);
+  }
+
   const min = new Date(Math.min(...dates));
   const max = new Date(Math.max(...dates));
-  const today = parseDate(formatDate(new Date()));
-  return { min, max: max > today ? max : today };
+  return { min, max };
+}
+
+function getPresetWindow(rangeKey, today = getToday(), weightDates = []) {
+  if (rangeKey === "month") {
+    const min = new Date(today.getFullYear(), today.getMonth(), 0);
+    const max = getMonthEnd(today);
+    const measuredMin = firstWeightDateInWindow(
+      weightDates,
+      formatDate(min),
+      formatDate(max),
+    );
+    return {
+      min: measuredMin ? parseDate(measuredMin) : min,
+      max,
+    };
+  }
+
+  const months = RANGE_MONTHS[rangeKey];
+  if (!months) return null;
+
+  const baseStart = addMonths(today, -months);
+  const anchorLabel =
+    firstWeightDateInWindow(
+      weightDates,
+      formatDate(baseStart),
+      formatDate(today),
+    ) ?? weightDates[0];
+  const min = anchorLabel ? parseDate(anchorLabel) : baseStart;
+
+  return {
+    min,
+    max: addMonths(min, months),
+  };
+}
+
+function getGraphDateRanges(weightDates) {
+  const today = getToday();
+  return ["month", "1m", "3m", "6m"].map((key) =>
+    getPresetWindow(key, today, weightDates),
+  );
+}
+
+function formatDateWindow(range) {
+  return {
+    min: formatDate(range.min),
+    max: formatDate(range.max),
+  };
 }
 
 function buildDailyDates(start, end) {
@@ -130,12 +196,16 @@ function calculateMovingAverage(dateString, weightMap) {
   return Number((sum / values.length).toFixed(2));
 }
 
-export function buildChartRows(weights, targets) {
+export function buildChartRows(weights, targets, options = {}) {
   const weightRecords = sortRecords(weights || []);
   const targetRecords = sortRecords(targets || []);
   const weightMap = makeWeightMap(weightRecords);
   const targetMap = makeWeightMap(targetRecords);
-  const range = getDateRange(weightRecords, targetRecords);
+  const range = getDateRange(
+    weightRecords,
+    targetRecords,
+    options.includeDateRanges || [],
+  );
   const dates = buildDailyDates(range.min, range.max);
 
   return dates.map((date) => ({
@@ -272,8 +342,8 @@ export function buildSummary(weights, targets) {
 // ---- グラフ描画 ----
 
 let chart = null;
-
-const RANGE_MONTHS = { "1m": 1, "3m": 3, "6m": 6 };
+let chartAllWindow = null;
+let chartWeightDates = [];
 
 function isNarrowScreen() {
   return window.matchMedia("(max-width: 760px)").matches;
@@ -292,9 +362,9 @@ function formatTooltipTitle(label) {
 }
 
 // プリセットから表示ウィンドウ(ラベル値)を計算する。
-// "month": 先月末日〜今月末日(初期表示)
-// "1m"/"3m"/"6m": 今日からN月遡る / "all": 全期間
-function calcWindow(labels, rangeKey) {
+// "month": 実測開始〜今月末(実測がなければ先月末〜今月末)
+// "1m"/"3m"/"6m": 実測開始からNヶ月先まで / "all": 全期間
+function calcWindow(labels, rangeKey, allWindow = null, weightDates = []) {
   const first = labels[0];
   const last = labels[labels.length - 1];
 
@@ -304,29 +374,21 @@ function calcWindow(labels, rangeKey) {
     return label;
   };
 
-  if (rangeKey === "month") {
-    const today = new Date();
-    const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  if (rangeKey === "all") {
     return {
-      min: clamp(formatDate(prevMonthEnd)),
-      max: clamp(formatDate(monthEnd)),
+      min: clamp(allWindow?.min ?? first),
+      max: clamp(allWindow?.max ?? last),
     };
   }
 
-  const months = RANGE_MONTHS[rangeKey];
-  if (!months) return { min: first, max: last };
+  const presetWindow = getPresetWindow(rangeKey, getToday(), weightDates);
+  if (!presetWindow) return { min: first, max: last };
+  const windowLabels = formatDateWindow(presetWindow);
 
-  let endLabel = formatDate(new Date());
-  if (endLabel > last) endLabel = last;
-  if (endLabel < first) endLabel = first;
-
-  const start = parseDate(endLabel);
-  start.setMonth(start.getMonth() - months);
-  let startLabel = formatDate(start);
-  if (startLabel < first) startLabel = first;
-
-  return { min: startLabel, max: endLabel };
+  return {
+    min: clamp(windowLabels.min),
+    max: clamp(windowLabels.max),
+  };
 }
 
 // 表示中のX範囲にあわせてY軸を自動フィットし、
@@ -398,17 +460,25 @@ export function drawChart(
   rangeKey = "month",
   visibility = { raw: false, movingAverage: true, target: true },
 ) {
-  const rows = buildChartRows(weights, targets);
+  const weightRecords = sortRecords(weights || []);
+  const targetRecords = sortRecords(targets || []);
+  chartAllWindow = formatDateWindow(getDateRange(weightRecords, targetRecords));
+  chartWeightDates = weightRecords
+    .filter((row) => row.date && typeof row.weight === "number")
+    .map((row) => row.date);
+
+  const rows = buildChartRows(weights, targets, {
+    includeDateRanges: getGraphDateRanges(chartWeightDates),
+  });
   const labels = rows.map((row) => row.date);
   const canvas = document.getElementById("weightChart");
 
   // 目標線は日次の補間値で連続に描く(点が1つしか画面内になくても線が出るように)。
-  // 補間は直線なので、点同士を結ぶ従来の見た目と同じ。線は目標の入力期間内のみ。
-  const sortedTargets = sortRecords(targets || []);
+  // 最後に入力した目標以降は、その目標値を維持して未来側にも線を続ける。
+  const sortedTargets = targetRecords;
   const firstTargetDate = sortedTargets[0]?.date ?? null;
-  const lastTargetDate = sortedTargets[sortedTargets.length - 1]?.date ?? null;
   const targetLineData = rows.map((row) =>
-    firstTargetDate && row.date >= firstTargetDate && row.date <= lastTargetDate
+    firstTargetDate && row.date >= firstTargetDate
       ? row.targetForDiff
       : null,
   );
@@ -421,7 +491,12 @@ export function drawChart(
 
   if (chart) chart.destroy();
 
-  const initialWindow = calcWindow(labels, rangeKey);
+  const initialWindow = calcWindow(
+    labels,
+    rangeKey,
+    chartAllWindow,
+    chartWeightDates,
+  );
 
   chart = new Chart(canvas, {
     type: "line",
@@ -554,11 +629,16 @@ export function drawChart(
   refitY(chart);
 }
 
-// 期間プリセット("1m" | "3m" | "6m" | "all")を適用する
+// 期間プリセット("month" | "1m" | "3m" | "6m" | "all")を適用する
 export function setChartRange(rangeKey) {
   if (!chart) return;
   const labels = chart.data.labels;
-  const nextWindow = calcWindow(labels, rangeKey);
+  const nextWindow = calcWindow(
+    labels,
+    rangeKey,
+    chartAllWindow,
+    chartWeightDates,
+  );
   chart.options.scales.x.min = nextWindow.min;
   chart.options.scales.x.max = nextWindow.max;
   refitY(chart);

@@ -12,7 +12,7 @@ import {
   saveUserSettings,
 } from "./services/firebase-store.js?v=20260727-2";
 import { showNotice } from "./services/notification.js";
-import { loadSfc } from "./sfc-loader.js?v=20260718-1";
+import { loadSfc } from "./sfc-loader.js?v=20260728-3";
 
 const VIEW_OPTIONS = [
   { value: "graph", label: "グラフ" },

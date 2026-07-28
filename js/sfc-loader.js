@@ -1,4 +1,4 @@
-import * as chartModule from "./chart.js";
+import * as chartModule from "./chart.js?v=20260728-3";
 import * as firebaseStoreModule from "./services/firebase-store.js?v=20260717-4";
 import * as notificationModule from "./services/notification.js";
 import * as exportRecordsModule from "./utils/export-records.js?v=20260717-4";
