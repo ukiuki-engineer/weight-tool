@@ -1,6 +1,6 @@
 // グラフの計算・描画ロジック。
 // Vue には依存せず、測定値・目標値を引数で受け取る純粋な関数群。
-// 外部から使うのは buildChartRows / buildSummary / drawChart / setChartRange の4つ。
+// 外部から使うのは buildChartRows / buildSummary / drawChart / setChartRange など。
 //
 // グラフ操作は chartjs-plugin-zoom(CDN読み込み)を使用:
 //   - ドラッグ/スワイプで表示期間を移動
@@ -120,6 +120,23 @@ function formatDateWindow(range) {
     min: formatDate(range.min),
     max: formatDate(range.max),
   };
+}
+
+function isDateLabel(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const date = parseDate(value);
+  return !Number.isNaN(date.getTime()) && formatDate(date) === value;
+}
+
+function normalizeCustomWindow(rangeSpec) {
+  if (!rangeSpec || typeof rangeSpec !== "object") return null;
+  if (!isDateLabel(rangeSpec.min) || !isDateLabel(rangeSpec.max)) return null;
+
+  const min = parseDate(rangeSpec.min);
+  const max = parseDate(rangeSpec.max);
+  return min <= max ? { min, max } : { min: max, max: min };
 }
 
 function buildDailyDates(start, end) {
@@ -361,10 +378,10 @@ function formatTooltipTitle(label) {
   return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}(${WEEKDAYS[date.getDay()]})`;
 }
 
-// プリセットから表示ウィンドウ(ラベル値)を計算する。
+// プリセットまたは任意期間から表示ウィンドウ(ラベル値)を計算する。
 // "month": 実測開始〜今月末(実測がなければ先月末〜今月末)
 // "1m"/"3m"/"6m": 実測開始からNヶ月先まで / "all": 全期間
-function calcWindow(labels, rangeKey, allWindow = null, weightDates = []) {
+function calcWindow(labels, rangeSpec, allWindow = null, weightDates = []) {
   const first = labels[0];
   const last = labels[labels.length - 1];
 
@@ -373,6 +390,17 @@ function calcWindow(labels, rangeKey, allWindow = null, weightDates = []) {
     if (label > last) return last;
     return label;
   };
+
+  const customWindow = normalizeCustomWindow(rangeSpec);
+  if (customWindow) {
+    const windowLabels = formatDateWindow(customWindow);
+    return {
+      min: clamp(windowLabels.min),
+      max: clamp(windowLabels.max),
+    };
+  }
+
+  const rangeKey = typeof rangeSpec === "string" ? rangeSpec : "month";
 
   if (rangeKey === "all") {
     return {
@@ -457,18 +485,22 @@ function movingAverageGradient(context) {
 export function drawChart(
   weights,
   targets,
-  rangeKey = "month",
+  rangeSpec = "month",
   visibility = { raw: false, movingAverage: true, target: true },
 ) {
   const weightRecords = sortRecords(weights || []);
   const targetRecords = sortRecords(targets || []);
+  const customWindow = normalizeCustomWindow(rangeSpec);
   chartAllWindow = formatDateWindow(getDateRange(weightRecords, targetRecords));
   chartWeightDates = weightRecords
     .filter((row) => row.date && typeof row.weight === "number")
     .map((row) => row.date);
 
+  const includeDateRanges = getGraphDateRanges(chartWeightDates);
+  if (customWindow) includeDateRanges.push(customWindow);
+
   const rows = buildChartRows(weights, targets, {
-    includeDateRanges: getGraphDateRanges(chartWeightDates),
+    includeDateRanges,
   });
   const labels = rows.map((row) => row.date);
   const canvas = document.getElementById("weightChart");
@@ -493,7 +525,7 @@ export function drawChart(
 
   const initialWindow = calcWindow(
     labels,
-    rangeKey,
+    rangeSpec,
     chartAllWindow,
     chartWeightDates,
   );
@@ -629,19 +661,40 @@ export function drawChart(
   refitY(chart);
 }
 
-// 期間プリセット("month" | "1m" | "3m" | "6m" | "all")を適用する
-export function setChartRange(rangeKey) {
+// 期間プリセットまたは任意期間({ min, max })を適用する
+export function setChartRange(rangeSpec) {
   if (!chart) return;
   const labels = chart.data.labels;
   const nextWindow = calcWindow(
     labels,
-    rangeKey,
+    rangeSpec,
     chartAllWindow,
     chartWeightDates,
   );
   chart.options.scales.x.min = nextWindow.min;
   chart.options.scales.x.max = nextWindow.max;
   refitY(chart);
+}
+
+function labelForScaleValue(labels, value, fallbackIndex) {
+  if (typeof value === "string" && labels.includes(value)) return value;
+  const numericValue = Number(value);
+  const index = Number.isFinite(numericValue)
+    ? Math.round(numericValue)
+    : fallbackIndex;
+  const clampedIndex = Math.max(0, Math.min(labels.length - 1, index));
+  return labels[clampedIndex];
+}
+
+export function getVisibleChartWindow() {
+  if (!chart) return null;
+  const labels = chart.data.labels;
+  if (!labels.length) return null;
+
+  return {
+    min: labelForScaleValue(labels, chart.scales.x?.min, 0),
+    max: labelForScaleValue(labels, chart.scales.x?.max, labels.length - 1),
+  };
 }
 
 // 系列の表示/非表示を切り替える(datasetIndex: 0=実測値, 1=移動平均, 2=目標)

@@ -92,7 +92,15 @@ p {
   margin-bottom: 14px;
 }
 
-/* 期間プリセット(1ヶ月/3ヶ月/6ヶ月/全期間) */
+/* 期間プリセット(今月/3ヶ月/6ヶ月/全期間/任意) */
+.rangePicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .rangeBar {
   display: flex;
   gap: 4px;
@@ -117,6 +125,42 @@ p {
   color: #1d4ed8;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.customRangeFields {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.customRangeFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.customRangeInput,
+.customRangeInput.datePickerAlt {
+  width: 136px;
+  min-width: 0;
+  margin-top: 0;
+  padding: 7px 9px;
+  border-color: #d5dbe3;
+  font-size: 16px;
+  line-height: 22px;
+  min-height: 38px;
+}
+
+.customRangeSeparator {
+  padding-bottom: 9px;
+  color: #8a94a3;
+  font-size: 13px;
 }
 
 .chartHint {
@@ -1618,6 +1662,10 @@ input[type="date"] {
   }
 
   /* グラフの期間プリセットは全幅で等分 */
+  .rangePicker {
+    width: 100%;
+  }
+
   .rangeBar {
     width: 100%;
   }
@@ -1625,6 +1673,23 @@ input[type="date"] {
   .rangeBar button {
     flex: 1;
     padding: 9px 0;
+  }
+
+  .customRangeFields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    width: 100%;
+  }
+
+  .customRangeFields label {
+    min-width: 0;
+  }
+
+  .customRangeInput,
+  .customRangeInput.datePickerAlt {
+    width: 100%;
+    max-width: 100%;
   }
 
   .entryForm > .saveButton {

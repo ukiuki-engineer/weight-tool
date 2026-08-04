@@ -1,15 +1,37 @@
 <template>
   <section class="chartControls">
-    <div class="rangeBar">
-      <button
-        v-for="range in ranges"
-        :key="range.key"
-        type="button"
-        :class="{ active: activeRange === range.key }"
-        @click="setRange(range.key)"
-      >
-        {{ range.label }}
-      </button>
+    <div class="rangePicker">
+      <div class="rangeBar">
+        <button
+          v-for="range in ranges"
+          :key="range.key"
+          type="button"
+          :class="{ active: activeRange === range.key }"
+          @click="setRange(range.key)"
+        >
+          {{ range.label }}
+        </button>
+      </div>
+
+      <div v-if="activeRange === 'custom'" class="customRangeFields">
+        <label>
+          <span>開始</span>
+          <DatePicker
+            v-model="customStartDate"
+            input-class="customRangeInput"
+            alt-format="Y/m/d"
+          />
+        </label>
+        <span class="customRangeSeparator" aria-hidden="true">-</span>
+        <label>
+          <span>終了</span>
+          <DatePicker
+            v-model="customEndDate"
+            input-class="customRangeInput"
+            alt-format="Y/m/d"
+          />
+        </label>
+      </div>
     </div>
 
     <div class="seriesToggles">
@@ -51,8 +73,10 @@
 <script>
 // グラフページ。
 import { nextTick, onMounted, reactive, ref, watch } from "vue";
+import DatePicker from "../components/DatePicker.vue";
 import {
   drawChart,
+  getVisibleChartWindow,
   setChartRange,
   setSeriesVisibility,
 } from "@weight-tool/chart";
@@ -62,7 +86,21 @@ const RANGES = [
   { key: "3m", label: "3ヶ月" },
   { key: "6m", label: "6ヶ月" },
   { key: "all", label: "全期間" },
+  { key: "custom", label: "任意" },
 ];
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isDateString(value) {
+  if (!DATE_PATTERN.test(value || "")) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day
+  );
+}
 
 // datasetIndex は chart.js 側のデータセット並び順に対応
 const SERIES = [
@@ -73,6 +111,7 @@ const SERIES = [
 
 export default {
   name: "Graph",
+  components: { DatePicker },
   props: {
     records: { type: Object, required: true },
     active: { type: Boolean, default: true },
@@ -84,18 +123,42 @@ export default {
       movingAverage: true,
       target: true,
     });
+    const customStartDate = ref("");
+    const customEndDate = ref("");
+
+    function customRange() {
+      if (!isDateString(customStartDate.value)) return null;
+      if (!isDateString(customEndDate.value)) return null;
+      return {
+        min: customStartDate.value,
+        max: customEndDate.value,
+      };
+    }
+
+    function rangeSpec() {
+      if (activeRange.value !== "custom") return activeRange.value;
+      return customRange() ?? "month";
+    }
 
     function redraw() {
       drawChart(
         props.records.weights,
         props.records.targets,
-        activeRange.value,
+        rangeSpec(),
         seriesVisible,
       );
     }
 
     function setRange(key) {
       activeRange.value = key;
+      if (key === "custom") {
+        const hadCustomRange = Boolean(customRange());
+        const currentWindow = getVisibleChartWindow();
+        if (!customStartDate.value) customStartDate.value = currentWindow?.min || "";
+        if (!customEndDate.value) customEndDate.value = currentWindow?.max || "";
+        if (hadCustomRange && customRange()) redraw();
+        return;
+      }
       setChartRange(key);
     }
 
@@ -110,6 +173,10 @@ export default {
     });
 
     watch(() => props.records, redraw, { deep: true });
+    watch([customStartDate, customEndDate], () => {
+      if (activeRange.value !== "custom" || !customRange()) return;
+      redraw();
+    });
     watch(
       () => props.active,
       async (isActive) => {
@@ -123,6 +190,8 @@ export default {
       ranges: RANGES,
       seriesDefs: SERIES,
       activeRange,
+      customStartDate,
+      customEndDate,
       seriesVisible,
       setRange,
       toggleSeries,
