@@ -180,11 +180,44 @@ p {
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
+.movingAverageGuideMobile {
+  display: none;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .movingAverageGuide h2 {
   margin: 0 0 8px;
   color: #1f2937;
   font-size: 16px;
   line-height: 1.35;
+}
+
+.movingAverageGuideTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.guideMoreIcon {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin-right: 2px;
+  border-top: 2px solid #14b8a6;
+  border-right: 2px solid #14b8a6;
+  transform: rotate(45deg);
 }
 
 .movingAverageGuide p {
@@ -196,6 +229,36 @@ p {
 
 .movingAverageGuide p + p {
   margin-top: 6px;
+}
+
+.guideDialog {
+  width: min(480px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.guideDialog .modalHeader h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.guideDialogBody {
+  margin-top: 16px;
+}
+
+.guideDialogBody p {
+  margin: 0;
+  color: #556070;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.guideDialogBody p + p {
+  margin-top: 10px;
 }
 
 /* 系列のON/OFFトグルチップ */
@@ -1631,6 +1694,14 @@ input[type="date"] {
   .chartCard {
     height: 420px;
     padding: 12px 8px;
+  }
+
+  .movingAverageGuideDesktop {
+    display: none;
+  }
+
+  .movingAverageGuideMobile {
+    display: block;
   }
 
   /* 日付・体重は1行に並べ、保存ボタンはその下に全幅で */

@@ -33,7 +33,7 @@ const {
   onBeforeUnmount,
 } = Vue;
 
-const GraphView = defineAsyncComponent(() => loadSfc("./pages/Graph.vue"));
+const GraphView = defineAsyncComponent(() => loadSfc("./pages/Graph.vue?v=20260805-1"));
 const SummaryView = defineAsyncComponent(() => loadSfc("./pages/Summary.vue"));
 const EntryView = defineAsyncComponent(() => loadSfc("./pages/Entry.vue"));
 const TargetView = defineAsyncComponent(() => loadSfc("./pages/Target.vue"));

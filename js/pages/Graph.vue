@@ -59,7 +59,7 @@
     スワイプ/ドラッグで期間移動、ピンチ(PCはCtrl+ホイール)で拡大縮小
   </p>
 
-  <section class="movingAverageGuide">
+  <section class="movingAverageGuide movingAverageGuideDesktop">
     <h2>体重の流れは7日移動平均で見ましょう</h2>
     <p>
       日々の体重は水分量や食事、測る時間によって上下します。脂肪が減っていても、見かけ上の体重が増えることもあります。
@@ -68,6 +68,41 @@
       7日移動平均は直近7日分をならした線なので、1日の増減に振り回されずに体重の増減を確認できます。
     </p>
   </section>
+
+  <button
+    type="button"
+    class="movingAverageGuide movingAverageGuideMobile"
+    aria-haspopup="dialog"
+    :aria-expanded="guideOpen.toString()"
+    @click="openGuide"
+  >
+    <span class="movingAverageGuideTitle">
+      体重の流れは7日移動平均で見ましょう
+      <span class="guideMoreIcon" aria-hidden="true"></span>
+    </span>
+  </button>
+
+  <div v-if="guideOpen" class="modalBackdrop guideDialogBackdrop" @click.self="closeGuide">
+    <section
+      class="guideDialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="movingAverageGuideDialogTitle"
+    >
+      <div class="modalHeader">
+        <h2 id="movingAverageGuideDialogTitle">体重の流れは7日移動平均で見ましょう</h2>
+        <button type="button" class="iconButton" aria-label="閉じる" @click="closeGuide">×</button>
+      </div>
+      <div class="guideDialogBody">
+        <p>
+          日々の体重は水分量や食事、測る時間によって上下します。脂肪が減っていても、見かけ上の体重が増えることもあります。
+        </p>
+        <p>
+          7日移動平均は直近7日分をならした線なので、1日の増減に振り回されずに体重の増減を確認できます。
+        </p>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script>
@@ -125,6 +160,7 @@ export default {
     });
     const customStartDate = ref("");
     const customEndDate = ref("");
+    const guideOpen = ref(false);
 
     function customRange() {
       if (!isDateString(customStartDate.value)) return null;
@@ -167,6 +203,14 @@ export default {
       setSeriesVisibility(series.datasetIndex, seriesVisible[series.key]);
     }
 
+    function openGuide() {
+      guideOpen.value = true;
+    }
+
+    function closeGuide() {
+      guideOpen.value = false;
+    }
+
     onMounted(async () => {
       await nextTick();
       redraw();
@@ -192,7 +236,10 @@ export default {
       activeRange,
       customStartDate,
       customEndDate,
+      guideOpen,
       seriesVisible,
+      openGuide,
+      closeGuide,
       setRange,
       toggleSeries,
     };
