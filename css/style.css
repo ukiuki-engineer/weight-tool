@@ -1648,12 +1648,25 @@ input[type="date"] {
 
 @media (max-width: 760px) {
   .container {
-    padding: 14px;
+    padding: 10px 14px 12px;
   }
 
   .stickyBar {
     margin: 0 -14px;
-    padding: 6px 14px 0;
+    padding: 2px 14px 0;
+  }
+
+  .header {
+    margin-bottom: 6px;
+  }
+
+  .viewContent {
+    margin-top: 10px;
+  }
+
+  .chartControls {
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   /* ログアウトは右上のまま維持し、メールアドレス表示だけ省く */
@@ -1674,13 +1687,13 @@ input[type="date"] {
   }
 
   h1 {
-    font-size: 22px;
+    font-size: 21px;
     margin-bottom: 0;
   }
 
   .viewTabs button {
     flex: 1;
-    padding: 12px;
+    padding: 9px 12px;
   }
 
   .controls {
@@ -1692,8 +1705,12 @@ input[type="date"] {
   }
 
   .chartCard {
-    height: 420px;
-    padding: 12px 8px;
+    height: 360px;
+    padding: 10px 8px;
+  }
+
+  .chartHint {
+    display: none;
   }
 
   .movingAverageGuideDesktop {
@@ -1702,6 +1719,12 @@ input[type="date"] {
 
   .movingAverageGuideMobile {
     display: block;
+    margin-top: 8px;
+    padding: 12px 14px;
+  }
+
+  .movingAverageGuideTitle {
+    font-size: 14px;
   }
 
   /* 日付・体重は1行に並べ、保存ボタンはその下に全幅で */
