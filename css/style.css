@@ -118,6 +118,7 @@ p {
   font-size: 13px;
   color: #556070;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .rangeBar button.active {
